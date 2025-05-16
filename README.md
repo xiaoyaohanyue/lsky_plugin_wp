@@ -4,6 +4,16 @@
 * fileinfo（必须）
 * imagemagick (可选)
 
+## API格式
+
+* V1
+域名/api/vi
+例如：https://test.com/api/v1
+* v2
+域名/api/v2
+例如：https://test.com/api/v2
+
+## 更新细节
 2025.1.14更新：
 
 2025.5.16更新：
