@@ -3,7 +3,7 @@
 namespace src;
 use src\LskyCommon;
 
-
+add_action('wp_ajax_lsky_fetch_v2_meta', array(LskyCommon::class,'lsky_fetch_v2_meta'));
 if (LskyCommon::api_info('switch') == 'enable'){
     add_action('wp_ajax_lsky_upload_one',array(LskyCommon::class,'replaced_one'));
     add_filter('attachment_fields_to_edit', array(LskyCommon::class,'attachment_editor'), 10, 2);

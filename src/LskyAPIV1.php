@@ -57,7 +57,14 @@ class LskyAPIV1
         $mimetype = finfo_file($finfo, $data["file"]); 
         finfo_close($finfo);
         $image = curl_file_create( $data["file"], $mimetype, $data["filename"] );
-        $post_data = array( 'file' => $image );
+        if (LskyCommon::api_info('open_source') == 'no'){
+            $post_data = [
+                'file' => $image,
+                'permission' => LskyCommon::api_info('permission')
+            ];
+        }else{
+            $post_data = array( 'file' => $image );
+        }
         $headers = [
             'Content-Type: multipart/form-data',
             'Authorization: Bearer ' . $data["token"]
@@ -74,7 +81,7 @@ class LskyAPIV1
             'Content-Type: application/json',
             'Authorization: Bearer ' . $token
         ];
-        $response = Utils::curl_delete($url, $headers);
+        $response = Utils::curl_delete($url, $headers,null);
         return $response;
     }
     

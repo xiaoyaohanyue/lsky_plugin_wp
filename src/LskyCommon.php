@@ -1,9 +1,11 @@
 <?php
 namespace src;
 
+use ParagonIE\Sodium\Core\Util;
 use src\LskyPro;
 use src\LskyAPIV1;
 use src\Utils;
+use src\LskyAPIV2;
 
 class LskyCommon extends LskyPro
 {
@@ -38,25 +40,49 @@ class LskyCommon extends LskyPro
 
 
     public static function lsky_menu(){
-        return add_plugins_page(
-            "图床插件",
-            "图床插件",
+        return add_menu_page(
+            "Lsky Pro设置",
+            "Lsky Pro设置",
             'manage_options',
-            "lsky",
-            'lsky_display'
+            "lsky_settings",
+            'lsky_display',
+            'dashicons-admin-generic',
+            100
         );
     }
 
+    public static function lsky_plugin_settings_link($links) {
+    $settings_link = '<a href="' . admin_url('admin.php?page=lsky_settings') . '">设置</a>';
+    array_unshift($links, $settings_link);
+    return $links;
+}
+
     public static function img_del_handle($post_id, $post){
         $data = wp_get_attachment_metadata($post_id);
-        if (!empty($data['key'])){
-            LskyAPIV1::img_delete($data['key']);
-            Utils::writeLog('删除了'.$data['ori_path']);
-            foreach($data['sizes'] as $key => $value){
-                if (!empty($value['key'])){
-                    LskyAPIV1::img_delete($value['key']);
-                    Utils::writeLog('删除了'.$value['ori_path']);
-                    @unlink($value['ori_path']);
+        if (self::api_info('api_version') == 'v1'){
+            if (!empty($data['key'])){
+                LskyAPIV1::img_delete($data['key']);
+                Utils::writeLog('删除了'.$data['ori_path']);
+                foreach($data['sizes'] as $key => $value){
+                    if (!empty($value['key'])){
+                        LskyAPIV1::img_delete($value['key']);
+                        Utils::writeLog('删除了'.$value['ori_path']);
+                        @unlink($value['ori_path']);
+                    }
+                }
+            }
+        }else{
+            if (!empty($data['key'])){
+                LskyAPIV2::img_delete($data['key']);
+                Utils::writeLog('删除了'.$data['ori_path']);
+                Utils::writeLog(json_encode($data));
+                foreach($data['sizes'] as $key => $value){
+                    if (!empty($value['key'])){
+                        LskyAPIV2::img_delete($value['key']);
+                        Utils::writeLog('删除了'.$value['ori_path']);
+                        Utils::writeLog($value['key']);
+                        @unlink($value['ori_path']);
+                    }
                 }
             }
         }
@@ -71,21 +97,42 @@ class LskyCommon extends LskyPro
     }
 
     public static function img_datahandle($imgname){
-        $res = LskyAPIV1::img_upload($imgname);
-        if ( true === $res['status'] ){
-            $url = $res['data']['links']['url'];
+        if (self::api_info('api_version') == 'v1'){
+            $res = LskyAPIV1::img_upload($imgname);
+            if ( true === $res['status'] ){
+                $url = $res['data']['links']['url'];
+            }
+            $tmpname = explode("/",$url);
+            $filename = $tmpname[count($tmpname)-1];
+            $img = array(
+                "file" => $filename,
+                "url" => $url,
+                "type" => $res['data']['mimetype'],
+                "name" => $res['data']['name'],
+                "size" => $res['data']['size'],
+                "key" => $res['data']['key'],
+                "pathname" => $res['data']['pathname']
+            );
+            foreach($img as $key => $value){
+                    Utils::writeLog($key.' : '.$value);
+                }
+        }else{
+            $res = LskyAPIV2::img_upload($imgname);
+            Utils::writeLog('V2上传图片返回数据:'.json_encode($res));
+            if ( 'success' === $res['status'] ){
+                $img = array(
+                    "name" => explode("/",$res['data']['pathname'])[1],
+                    "url" => $res['data']['public_url'],
+                    "type" => $res['data']['mimetype'],
+                    "file" => $res['data']['filename'],
+                    "key" => $res['data']['id'],
+                    "pathname" => $res['data']['pathname']
+                );
+                foreach($img as $key => $value){
+                    Utils::writeLog($key.' : '.$value);
+                }
+            }
         }
-        $tmpname = explode("/",$url);
-        $filename = $tmpname[count($tmpname)-1];
-        $img = array(
-            "file" => $filename,
-            "url" => $url,
-            "type" => 'image/webp',
-            "name" => $res['data']['name'],
-            "size" => $res['data']['size'],
-            "key" => $res['data']['key'],
-            "pathname" => $res['data']['pathname']
-        );
         return $img;
     }
 
@@ -111,7 +158,9 @@ class LskyCommon extends LskyPro
             foreach($image_meta['sizes'] as $key => $value){
                 $filename = $value['file'];
                 $urldata = self::img_datahandle($upload_dir['path'].'/'.$filename);
-                $image_meta['sizes'][$key]['filesize'] = $urldata['size'];
+                if (self::api_info('api_version') == 'v1'){
+                    $image_meta['sizes'][$key]['filesize'] = $urldata['size'];
+                }
                 $image_meta['sizes'][$key]['file'] = $urldata['name'];
                 $image_meta['sizes'][$key]['mime-type'] = $urldata['type'];
                 $image_meta['sizes'][$key]['key'] = $urldata['key'];
@@ -172,4 +221,34 @@ class LskyCommon extends LskyPro
         $post_id = $_POST['post_id'];
         self::update_to_lsky($post_id);
     } 
+
+    public static function lsky_fetch_v2_meta() {
+        $api = sanitize_text_field($_POST['api']);
+        $token = sanitize_text_field($_POST['token']);
+        $albums = [];
+        $album_resp = LskyAPIV2::get_album($api, $token);
+        if ($album_resp['status'] == 'success') {
+            foreach ($album_resp['data']['data'] as $item) {
+                $albums[] = ['id' => $item['id'], 'name' => $item['name']];
+            }
+        } 
+        $storages = [];
+        $storage_resp = LskyAPIV2::get_storage($api, $token);
+        if ($storage_resp['status'] == 'success') {
+            foreach ($storage_resp['data']['storages'] as $item) {
+                $storages[] = ['id' => $item['id'], 'name' => $item['name']];
+            }
+        }
+        $response = [
+            'status' => true,
+            'albums' => $albums,
+            'storages' => $storages
+        ];
+        if (ob_get_length()) ob_clean();
+        echo json_encode($response);
+        wp_die();
+    }
+
+
+
 }
