@@ -7,9 +7,9 @@ use src\LskyCommon;
 use src\LskyAPIV1;
 use src\Utils;
 
-error_reporting(0);
 function lsky_display() {
-    if ($_POST['action'] == 'save') {
+    $action = isset($_POST['action']) ? $_POST['action'] : '';
+    if ($action == 'save') {
         $datas['api_version'] = sanitize_text_field(trim($_POST['api_version']));
         $datas['open_source'] = sanitize_text_field(trim($_POST['open_source']));
         $datas['permission'] = sanitize_text_field(trim($_POST['permission']));
@@ -34,7 +34,7 @@ function lsky_display() {
         echo '<div id="message" class="updated fade">设置已保存！</div>';
     }
 
-    if ($_POST['action'] == 'updateTokens') {
+    if ($action == 'updateTokens') {
         $datas = maybe_unserialize(get_option('lsky_setting'));
         $datas['tokens'] = LskyAPIV1::refreash_token();
         $datas = serialize($datas);
