@@ -1,38 +1,41 @@
 <?php
 namespace src;
 
-require_once 'LskyPro.php';
+use src\LskyPro;
+use src\LskyAPIV1;
+use src\Utils;
 
 class LskyCommon extends LskyPro
 {
-    public static function writeLog($message, $logFile_name = 'app.log') {
-        // 确保消息中包含时间戳
-        $logFile = self::$lsky_log_dir . $logFile_name;
-        date_default_timezone_set('Asia/Shanghai');
-        $timestamp = date('Y-m-d H:i:s');
-        // 检查消息是否为数组或对象，并转换为字符串
-        if (is_array($message) || is_object($message)) {
-            $message = print_r($message, true); // 转换为字符串
-        }
-        $logMessage = "[$timestamp] $message" . PHP_EOL;
     
-        // 将日志消息写入文件
-        file_put_contents($logFile, $logMessage, FILE_APPEND);
-    }
 
     public static function api_info($para)
     {
         $instance = new self();
-        if ($para == 'api') {
-            return $instance->lsky_api;
-        } else if ($para == 'token') {
-            return $instance->lsky_token;
-        } else if ($para == 'permission') {
-            return $instance->lsky_permission;
-        } else if ($para == 'switch') {
-            return $instance->lsky_switch;
+        switch ($para) {
+            case 'api':
+                return $instance->lsky_api;
+            case 'token':
+                return $instance->lsky_token;
+            case 'permission':
+                return $instance->lsky_permission;
+            case 'switch':
+                return $instance->lsky_switch;
+            case 'api_version':
+                return $instance->lsky_version;
+            case 'open_source':
+                return $instance->lsky_open_source;
+            case 'album_id':
+                return $instance->lsky_album_id;
+            case 'storage_id':
+                return $instance->lsky_storage_id;
+            case 'username':
+                return $instance->lsky_username;
+            case 'password':
+                return $instance->lsky_password;
         }
     }
+
 
     public static function lsky_menu(){
         return add_plugins_page(
@@ -47,34 +50,18 @@ class LskyCommon extends LskyPro
     public static function img_del_handle($post_id, $post){
         $data = wp_get_attachment_metadata($post_id);
         if (!empty($data['key'])){
-            self::img_delete($data['key']);
-            self::writeLog('删除了'.$data['ori_path']);
+            LskyAPIV1::img_delete($data['key']);
+            Utils::writeLog('删除了'.$data['ori_path']);
             foreach($data['sizes'] as $key => $value){
                 if (!empty($value['key'])){
-                    self::img_delete($value['key']);
-                    self::writeLog('删除了'.$value['ori_path']);
+                    LskyAPIV1::img_delete($value['key']);
+                    Utils::writeLog('删除了'.$value['ori_path']);
                     @unlink($value['ori_path']);
                 }
             }
         }
     }
-
-    public static function img_delete($key ){
-        $api = self::api_info('api');
-        $token = self::api_info('token');
-        $url = $api . '/images/' . $key;
-        $header = array('Content-Type: application/json',
-         'Authorization: Bearer ' . $token);
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "DELETE");
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_exec($ch);
-        curl_close($ch);
-    }
-
+    
     public static function get_attachment_url($url,$post_id){
         $data = wp_get_attachment_metadata($post_id);
         if ( !empty($data['key'])){
@@ -83,32 +70,8 @@ class LskyCommon extends LskyPro
         return $url;
     }
 
-    public static function img_upload($imgname){
-        $data['file'] = $imgname;
-        $data['api'] = self::api_info('api');
-        $data['token'] = self::api_info('token');
-        $url = $data["api"] . '/upload';
-        $finfo = finfo_open(FILEINFO_MIME); 
-        $mimetype = finfo_file($finfo, $data["file"]); 
-        finfo_close($finfo);
-        $image = curl_file_create( $data["file"], $mimetype, $data["filename"] );
-        $post_data = array( 'file' => $image );
-        $header[] = 'Content-Type: multipart/form-data';
-        $header[] = 'Authorization: Bearer ' . $data["token"];
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt( $ch, CURLOPT_HTTPHEADER, $header );
-        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $post_data);
-        $output = curl_exec($ch);
-        curl_close($ch);
-        return json_decode( $output, true );
-    }
-
     public static function img_datahandle($imgname){
-        $res = self::img_upload($imgname);
+        $res = LskyAPIV1::img_upload($imgname);
         if ( true === $res['status'] ){
             $url = $res['data']['links']['url'];
         }
@@ -207,6 +170,6 @@ class LskyCommon extends LskyPro
     }
     public static function replaced_one(){
         $post_id = $_POST['post_id'];
-        LskyCommon::update_to_lsky($post_id);
+        self::update_to_lsky($post_id);
     } 
 }

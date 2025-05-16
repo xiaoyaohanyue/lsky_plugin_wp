@@ -1,7 +1,6 @@
 <?php
 
-require_once 'LskyCommon.php';
-
+namespace src;
 use src\LskyCommon;
 
 
