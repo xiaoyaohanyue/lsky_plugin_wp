@@ -62,11 +62,9 @@ class LskyCommon extends LskyPro
         if (self::api_info('api_version') == 'v1'){
             if (!empty($data['key'])){
                 LskyAPIV1::img_delete($data['key']);
-                Utils::writeLog('删除了'.$data['ori_path']);
                 foreach($data['sizes'] as $key => $value){
                     if (!empty($value['key'])){
                         LskyAPIV1::img_delete($value['key']);
-                        Utils::writeLog('删除了'.$value['ori_path']);
                         @unlink($value['ori_path']);
                     }
                 }
@@ -74,13 +72,9 @@ class LskyCommon extends LskyPro
         }else{
             if (!empty($data['key'])){
                 LskyAPIV2::img_delete($data['key']);
-                Utils::writeLog('删除了'.$data['ori_path']);
-                Utils::writeLog(json_encode($data));
                 foreach($data['sizes'] as $key => $value){
                     if (!empty($value['key'])){
                         LskyAPIV2::img_delete($value['key']);
-                        Utils::writeLog('删除了'.$value['ori_path']);
-                        Utils::writeLog($value['key']);
                         @unlink($value['ori_path']);
                     }
                 }
@@ -113,24 +107,19 @@ class LskyCommon extends LskyPro
                 "key" => $res['data']['key'],
                 "pathname" => $res['data']['pathname']
             );
-            foreach($img as $key => $value){
-                    Utils::writeLog($key.' : '.$value);
-                }
         }else{
             $res = LskyAPIV2::img_upload($imgname);
-            Utils::writeLog('V2上传图片返回数据:'.json_encode($res));
             if ( 'success' === $res['status'] ){
+                $tmpname = explode("/",$url);
+                $filename = $tmpname[count($tmpname)-1];
                 $img = array(
-                    "name" => explode("/",$res['data']['pathname'])[1],
+                    "name" => $filename,
                     "url" => $res['data']['public_url'],
                     "type" => $res['data']['mimetype'],
                     "file" => $res['data']['filename'],
                     "key" => $res['data']['id'],
                     "pathname" => $res['data']['pathname']
                 );
-                foreach($img as $key => $value){
-                    Utils::writeLog($key.' : '.$value);
-                }
             }
         }
         return $img;
