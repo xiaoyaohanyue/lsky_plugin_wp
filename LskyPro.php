@@ -5,7 +5,7 @@
  * Plugin Name: Lsky 图床插件
  * Plugin URI: https://github.com/xiaoyaohanyue/lsky_plugin_wp
  * Description: 将 WordPress 媒体上传至 Lsky 图床
- * Version: 2.0.2
+ * Version: 2.0.3
  * Author: 妖月
  * Author URI: https://fjwr.xyz
  */

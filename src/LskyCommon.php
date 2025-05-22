@@ -110,7 +110,7 @@ class LskyCommon extends LskyPro
         }else{
             $res = LskyAPIV2::img_upload($imgname);
             if ( 'success' === $res['status'] ){
-                $tmpname = explode("/",$url);
+                $tmpname = explode("/",$res['data']['pathname']);
                 $filename = $tmpname[count($tmpname)-1];
                 $img = array(
                     "name" => $filename,
