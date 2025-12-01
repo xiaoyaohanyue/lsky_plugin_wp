@@ -56,7 +56,7 @@ class LskyAPIV1
         $finfo = finfo_open(FILEINFO_MIME); 
         $mimetype = finfo_file($finfo, $data["file"]); 
         finfo_close($finfo);
-        $image = curl_file_create( $data["file"], $mimetype, $data["filename"] );
+        $image = curl_file_create( $data["file"], $mimetype, $data["file"] );
         if (LskyCommon::api_info('open_source') == 'no'){
             $post_data = [
                 'file' => $image,

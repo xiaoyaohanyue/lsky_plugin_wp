@@ -40,7 +40,7 @@ class LskyAPIV2
         $finfo = finfo_open(FILEINFO_MIME); 
         $mimetype = finfo_file($finfo, $data["file"]); 
         finfo_close($finfo);
-        $image = curl_file_create( $data["file"], $mimetype, $data["filename"] );
+        $image = curl_file_create( $data["file"], $mimetype, $data["file"] );
         $post_data = [ 
             'file' => $image,
             'album_id' => $data["album_id"],
