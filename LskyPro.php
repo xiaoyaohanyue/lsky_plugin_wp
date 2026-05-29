@@ -11,6 +11,7 @@
  * Requires PHP: 7.4
  * Text Domain: lsky-plugin-wp
  * License: GPLv2 or later
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Update URI: https://fjwr.xyz/wp-plugin-updates/lsky_plugin_wp
  */
 
