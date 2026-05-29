@@ -17,7 +17,7 @@ done
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SOURCE_SLUG="lsky_plugin_wp"
-WPORG_SLUG="lsky-plugin-wp"
+WPORG_SLUG="lskypro"
 PLUGIN_SLUG="$SOURCE_SLUG"
 if [[ "$CHANNEL" == "wporg" ]]; then
   PLUGIN_SLUG="$WPORG_SLUG"
@@ -54,10 +54,11 @@ if [[ "$CHANNEL" == "wporg" ]]; then
     !skip { print }
   ' "$STAGE_PLUGIN/src/display.php" > "$STAGE_PLUGIN/src/display.php.tmp"
   mv "$STAGE_PLUGIN/src/display.php.tmp" "$STAGE_PLUGIN/src/display.php"
-  mv "$STAGE_PLUGIN/LskyPro.php" "$STAGE_PLUGIN/$WPORG_SLUG.php"
+  mv "$STAGE_PLUGIN/LskyPro.php" "$STAGE_PLUGIN/__wporg-main.php"
+  mv "$STAGE_PLUGIN/__wporg-main.php" "$STAGE_PLUGIN/$WPORG_SLUG.php"
   awk '
     /^[[:space:]]*\*[[:space:]]Update URI:/ { next }
-    /^use src\\SelfHostedUpdater;/ { next }
+    /^use LskyProPlugin\\SelfHostedUpdater;/ { next }
     /^if \(class_exists\(SelfHostedUpdater::class\)\) \{/ { skip = 1; next }
     skip && /^\}/ { skip = 0; next }
     skip { next }

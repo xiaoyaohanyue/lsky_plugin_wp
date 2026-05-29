@@ -1,10 +1,10 @@
 <?php
 
-namespace src;
+namespace LskyProPlugin;
 if (!defined('ABSPATH')) exit;
 
-use src\LskyCommon;
-use src\Utils;
+use LskyProPlugin\LskyCommon;
+use LskyProPlugin\Utils;
 
 class LskyAPIV1
 {
@@ -32,7 +32,7 @@ class LskyAPIV1
         $headers = [
             'Content-Type: application/json'
         ];
-        $response = Utils::curl_post($url, json_encode($post_data), $headers);
+        $response = Utils::http_post($url, json_encode($post_data), $headers);
         if (isset($response['status']) && true == $response['status'] && !empty($response['data']['token'])){
             return $response['data']['token'];
         }else{
@@ -48,7 +48,7 @@ class LskyAPIV1
             'Content-Type: application/json',
             'Authorization: Bearer ' . $lsky_token
         ];
-        $response = Utils::curl_delete($url, $headers);
+        $response = Utils::http_delete($url, $headers);
         return $response['status'] ?? false;
     }
 
@@ -76,13 +76,6 @@ class LskyAPIV1
             ];
         }
 
-        if (!function_exists('curl_file_create')) {
-            return [
-                'status' => false,
-                'message' => '当前 PHP 环境未启用 cURL 文件上传支持',
-            ];
-        }
-
         if (!function_exists('finfo_open')) {
             return [
                 'status' => false,
@@ -94,20 +87,17 @@ class LskyAPIV1
         $finfo = finfo_open(FILEINFO_MIME); 
         $mimetype = finfo_file($finfo, $data["file"]); 
         self::close_finfo($finfo);
-        $image = curl_file_create( $data["file"], $mimetype, $data["file"] );
         if (LskyCommon::api_info('open_source') == 'no'){
-            $post_data = [
-                'file' => $image,
+            $fields = [
                 'permission' => LskyCommon::api_info('permission')
             ];
         }else{
-            $post_data = array( 'file' => $image );
+            $fields = [];
         }
         $headers = [
-            'Content-Type: multipart/form-data',
             'Authorization: Bearer ' . $data["token"]
         ];
-        $response = Utils::curl_post($url, $post_data, $headers);
+        $response = Utils::multipart_post($url, $fields, 'file', $data["file"], $mimetype, $headers);
         return $response;
     }
 
@@ -119,7 +109,7 @@ class LskyAPIV1
             'Content-Type: application/json',
             'Authorization: Bearer ' . $token
         ];
-        $response = Utils::curl_delete($url, $headers,null);
+        $response = Utils::http_delete($url, $headers,null);
         return $response;
     }
     

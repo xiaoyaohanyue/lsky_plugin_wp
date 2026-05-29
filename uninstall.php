@@ -12,30 +12,22 @@ function lsky_plugin_wp_delete_logs($plugin_dir) {
         return;
     }
 
-    $files = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator($real_logs_dir, FilesystemIterator::SKIP_DOTS),
-        RecursiveIteratorIterator::CHILD_FIRST
-    );
-
-    foreach ($files as $file) {
-        if ($file->isDir()) {
-            rmdir($file->getPathname());
-        } else {
-            wp_delete_file($file->getPathname());
-        }
+    require_once ABSPATH . 'wp-admin/includes/file.php';
+    WP_Filesystem();
+    global $wp_filesystem;
+    if ($wp_filesystem instanceof WP_Filesystem_Base) {
+        $wp_filesystem->delete($real_logs_dir, true);
     }
-
-    rmdir($real_logs_dir);
 }
 
 if (is_multisite()) {
-    $site_ids = get_sites([
+    $lsky_site_ids = get_sites([
         'fields' => 'ids',
         'number' => 0,
     ]);
 
-    foreach ($site_ids as $site_id) {
-        switch_to_blog($site_id);
+    foreach ($lsky_site_ids as $lsky_site_id) {
+        switch_to_blog($lsky_site_id);
         delete_option('lsky_setting');
         restore_current_blog();
     }

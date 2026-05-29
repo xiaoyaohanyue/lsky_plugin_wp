@@ -1,11 +1,11 @@
 <?php
-namespace src;
+namespace LskyProPlugin;
 
 if (!defined('ABSPATH')) exit;
 
-use src\LskyPro;
-use src\LskyAPIV1;
-use src\LskyAPIV2;
+use LskyProPlugin\LskyPro;
+use LskyProPlugin\LskyAPIV1;
+use LskyProPlugin\LskyAPIV2;
 
 class LskyCommon extends LskyPro
 {
@@ -86,6 +86,23 @@ class LskyCommon extends LskyPro
         $settings_link = '<a href="' . esc_url(admin_url('admin.php?page=lsky_settings')) . '">设置</a>';
         array_unshift($links, $settings_link);
         return $links;
+    }
+
+    public static function enqueue_admin_assets()
+    {
+        wp_enqueue_script(
+            'lsky-upload-one',
+            plugins_url('../static/post.js', __FILE__),
+            ['jquery'],
+            '2.0.5',
+            true
+        );
+
+        wp_localize_script('lsky-upload-one', 'LskyUploadOne', [
+            'flag' => 'page',
+            'ajaxUrl' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce(self::AJAX_NONCE_ACTION),
+        ]);
     }
 
     public static function img_del_handle($post_id, $post){
@@ -219,17 +236,11 @@ class LskyCommon extends LskyPro
     public static function attachment_editor($form_fields, $post)
     {
         $post_id = absint($post->ID);
-        $config = [
-            'flag' => 'page',
-            'ajaxUrl' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce(self::AJAX_NONCE_ACTION),
-            'postId' => $post_id,
-        ];
         $form_fields["upload-to-lsky"] = array(
-            "label" => esc_html__("图床替换", "lsky-plugin-wp"),
+            "label" => esc_html__("图床替换", "lskypro"),
             "input" => "html",
-            "html" => '<script>window.LskyUploadOne=' . wp_json_encode($config) . ';</script>' . "<button type='button' class='button-secondary' id='lsky-upload-one'>" . esc_html__("一键替换", "lsky-plugin-wp") . "</button>" . '<script src="' . esc_url(plugins_url('../static/post.js',__FILE__)) . '"></script>',
-            "helps" => esc_html__("实现一键将该图片上传到外部图床并替换数据库信息。", "lsky-plugin-wp")
+            "html" => '<button type="button" class="button-secondary lsky-upload-one" data-post-id="' . esc_attr($post_id) . '">' . esc_html__("一键替换", "lskypro") . '</button>',
+            "helps" => esc_html__("实现一键将该图片上传到外部图床并替换数据库信息。", "lskypro")
 
           );
         return $form_fields;

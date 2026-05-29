@@ -2,26 +2,26 @@
 Contributors: yaoyue
 Tags: lskypro, image hosting, media, upload, cdn
 Requires at least: 6.0
-Tested up to: 6.8
+Tested up to: 7.0
 Requires PHP: 7.4
 Stable tag: 2.0.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-将 WordPress 媒体图片上传到 LskyPro（兰空图床），并使用远程图片地址替换媒体库图片地址。
+Upload WordPress media images to LskyPro and replace local media URLs with remote image URLs.
 
 == Description ==
 
-LskyPro（兰空图床）插件可以在 WordPress 上传媒体文件时，将图片上传到用户自行配置的 LskyPro（兰空图床）服务，并将媒体库中的图片访问地址替换为远程地址。
+LskyPro plugin uploads image files from the WordPress media workflow to a LskyPro image hosting service configured by the site administrator. After a successful upload, the plugin replaces the media library image URL with the remote image URL returned by LskyPro.
 
-插件支持：
+Features:
 
 * LskyPro API v1 / v2
-* 只填写 LskyPro 域名，插件自动生成 `/api/v1` 或 `/api/v2`
-* Token 配置
-* 开源版 v1 通过用户名和密码临时获取 Token
-* 商业版 v2 相册与存储策略选择
-* 卸载时清理插件配置
+* Domain-only API configuration. The plugin builds `/api/v1` or `/api/v2` automatically.
+* Token configuration.
+* Temporary username and password token refresh for open-source v1.
+* Album and storage strategy options for commercial v2.
+* Plugin option cleanup on uninstall.
 
 = External Services =
 
@@ -45,7 +45,7 @@ LskyPro project: https://github.com/lsky-org/lsky-pro
 
 == Installation ==
 
-1. Upload the plugin directory to `/wp-content/plugins/lsky-plugin-wp`.
+1. Upload the plugin directory to `/wp-content/plugins/lskypro`.
 2. Activate the plugin through the WordPress Plugins screen.
 3. Open `Settings -> Lsky Pro Settings`.
 4. Select the API version.
@@ -83,7 +83,7 @@ No. The plugin does not add public "powered by" links or credit links to the fro
 * Improved settings storage compatibility.
 * Added WordPress.org and GitHub/self-hosted dual-channel build flow.
 * GitHub/self-hosted channel supports `Update URI` and a self-hosted update manifest.
-* WordPress.org package uses the `lsky-plugin-wp/lsky-plugin-wp.php` structure.
+* WordPress.org package uses the `lskypro/lskypro.php` structure.
 * GitHub/self-hosted package keeps the legacy `lsky_plugin_wp/LskyPro.php` structure.
 * Settings page now requires only the LskyPro domain and builds `/api/v1` or `/api/v2` automatically.
 * v1 passwords are no longer stored.

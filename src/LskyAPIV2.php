@@ -1,10 +1,10 @@
 <?php
 
-namespace src;
+namespace LskyProPlugin;
 if (!defined('ABSPATH')) exit;
 
-use src\LskyCommon;
-use src\Utils;
+use LskyProPlugin\LskyCommon;
+use LskyProPlugin\Utils;
 
 class LskyAPIV2
 {
@@ -31,7 +31,7 @@ class LskyAPIV2
             'User-Agent: yaoyue/lsky-api-client',
             'Authorization: Bearer ' . $token
         ];
-        $response = Utils::curl_get($url, $headers);
+        $response = Utils::http_get($url, $headers);
         return $response;
     }
 
@@ -49,7 +49,7 @@ class LskyAPIV2
             'User-Agent: yaoyue/lsky-api-client',
             'Authorization: Bearer ' . $token
         ];
-        $response = Utils::curl_get($url, $headers);
+        $response = Utils::http_get($url, $headers);
         return $response;
     }
 
@@ -67,13 +67,6 @@ class LskyAPIV2
             ];
         }
 
-        if (!function_exists('curl_file_create')) {
-            return [
-                'status' => false,
-                'message' => '当前 PHP 环境未启用 cURL 文件上传支持',
-            ];
-        }
-
         if (!function_exists('finfo_open')) {
             return [
                 'status' => false,
@@ -85,18 +78,15 @@ class LskyAPIV2
         $finfo = finfo_open(FILEINFO_MIME); 
         $mimetype = finfo_file($finfo, $data["file"]); 
         self::close_finfo($finfo);
-        $image = curl_file_create( $data["file"], $mimetype, $data["file"] );
-        $post_data = [ 
-            'file' => $image,
+        $fields = [
             'album_id' => $data["album_id"],
             'is_public' => $data["is_public"],
             'storage_id' => $data["storage_id"]
         ];
         $headers = [
-            'Content-Type: multipart/form-data',
             'Authorization: Bearer ' . $data["token"]
         ];
-        $response = Utils::curl_post($url, $post_data, $headers);
+        $response = Utils::multipart_post($url, $fields, 'file', $data["file"], $mimetype, $headers);
         return $response;
     }
 
@@ -108,7 +98,7 @@ class LskyAPIV2
             'Content-Type: application/json',
             'Authorization: Bearer ' . $token
         ];
-        $response = Utils::curl_delete($url, $headers,'['.$key.']');
+        $response = Utils::http_delete($url, $headers,'['.$key.']');
         return $response;
     }
     

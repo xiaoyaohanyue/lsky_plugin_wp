@@ -2,7 +2,7 @@
 if (!defined('ABSPATH')) exit;
 
 spl_autoload_register(function ($class) {
-    $prefix = 'src\\';
+    $prefix = 'LskyProPlugin\\';
     $base_dir = __DIR__ . '/src/';
 
     $len = strlen($prefix);

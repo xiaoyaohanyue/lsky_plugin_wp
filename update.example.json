@@ -1,7 +1,7 @@
 {
   "version": "2.0.5",
   "requires": "6.0",
-  "tested": "6.8",
+  "tested": "7.0",
   "requires_php": "7.4",
   "homepage": "https://github.com/xiaoyaohanyue/lsky_plugin_wp",
   "download_url": "https://github.com/xiaoyaohanyue/lsky_plugin_wp/releases/download/v2.0.5/lsky_plugin_wp-github.zip",

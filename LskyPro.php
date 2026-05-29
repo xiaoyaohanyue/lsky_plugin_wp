@@ -9,7 +9,7 @@
  * Author: 妖月
  * Author URI: https://fjwr.xyz
  * Requires PHP: 7.4
- * Text Domain: lsky-plugin-wp
+ * Text Domain: lskypro
  * License: GPLv2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Update URI: https://fjwr.xyz/wp-plugin-updates/lsky_plugin_wp
@@ -18,8 +18,8 @@
 if (!defined('ABSPATH')) exit;
 require_once plugin_dir_path(__FILE__) . '/autoload.php';
 
-use src\LskyCommon;
-use src\SelfHostedUpdater;
+use LskyProPlugin\LskyCommon;
+use LskyProPlugin\SelfHostedUpdater;
 
 LskyCommon::cleanup_legacy_password();
 if (class_exists(SelfHostedUpdater::class)) {

@@ -6,8 +6,9 @@
         return;
     }
 
-    $('#lsky-upload-one').off('click').on('click', function () {
+    $('.lsky-upload-one').off('click').on('click', function () {
         const button = $(this);
+        const postId = button.data('post-id');
         button.prop('disabled', true);
 
         $.ajax({
@@ -15,7 +16,7 @@
             url: config.ajaxUrl,
             data: {
                 action: 'lsky_upload_one',
-                post_id: config.postId,
+                post_id: postId,
                 nonce: config.nonce
             },
             success: function (res) {

@@ -4,12 +4,12 @@ if (!defined('ABSPATH')) exit;
 require_once __DIR__ . '/LskyCommon.php';
 require_once __DIR__ . '/LskyAPIV1.php';
 
-use src\LskyCommon;
-use src\LskyAPIV1;
+use LskyProPlugin\LskyCommon;
+use LskyProPlugin\LskyAPIV1;
 // LSKY_GITHUB_CHANNEL_BEGIN
-use src\SelfHostedUpdater;
+use LskyProPlugin\SelfHostedUpdater;
 // LSKY_GITHUB_CHANNEL_END
-use src\Utils;
+use LskyProPlugin\Utils;
 
 function lsky_normalize_api_base($api) {
     $api = trim((string) $api);
@@ -70,7 +70,7 @@ function lsky_apply_update_channel_settings(&$datas) {
 
 function lsky_display() {
     if (!current_user_can('manage_options')) {
-        wp_die(esc_html__('无权访问该设置页。', 'lsky-plugin-wp'));
+        wp_die(esc_html__('无权访问该设置页。', 'lskypro'));
     }
 
     $action = isset($_POST['action']) ? sanitize_key(wp_unslash($_POST['action'])) : '';
@@ -83,11 +83,13 @@ function lsky_display() {
         $datas['open_source'] = isset($_POST['open_source']) ? sanitize_key(wp_unslash($_POST['open_source'])) : 'no';
         $datas['api_version'] = in_array($datas['api_version'], ['v1', 'v2'], true) ? $datas['api_version'] : 'v1';
         $datas['open_source'] = in_array($datas['open_source'], ['yes', 'no'], true) ? $datas['open_source'] : 'no';
-        $datas['permission'] = isset($_POST['permission']) && (string) wp_unslash($_POST['permission']) === '1' ? '1' : '0';
+        $permission_input = isset($_POST['permission']) ? sanitize_text_field(wp_unslash($_POST['permission'])) : '0';
+        $api_input = isset($_POST['api']) ? esc_url_raw(wp_unslash($_POST['api'])) : '';
+        $datas['permission'] = (string) $permission_input === '1' ? '1' : '0';
         $datas['username'] = isset($_POST['username']) ? sanitize_text_field(wp_unslash($_POST['username'])) : '';
         $password = isset($_POST['password']) ? sanitize_text_field(wp_unslash($_POST['password'])) : '';
         $datas['password'] = '';
-        $datas['api'] = isset($_POST['api']) ? lsky_build_api_endpoint(wp_unslash($_POST['api']), $datas['api_version']) : '';
+        $datas['api'] = lsky_build_api_endpoint($api_input, $datas['api_version']);
         $can_save = true;
         if ($datas['open_source'] == 'yes' && $datas['api_version'] == 'v1') {
             if (empty($datas['username']) && empty($password)) {
@@ -123,7 +125,8 @@ function lsky_display() {
             $datas = [];
         }
         $api_version_for_token = isset($_POST['api_version']) ? sanitize_key(wp_unslash($_POST['api_version'])) : ($datas['api_version'] ?? 'v1');
-        $api_for_token = isset($_POST['api']) ? lsky_build_api_endpoint(wp_unslash($_POST['api']), $api_version_for_token) : ($datas['api'] ?? '');
+        $api_input_for_token = isset($_POST['api']) ? esc_url_raw(wp_unslash($_POST['api'])) : '';
+        $api_for_token = $api_input_for_token !== '' ? lsky_build_api_endpoint($api_input_for_token, $api_version_for_token) : ($datas['api'] ?? '');
         $datas['api_version'] = $api_version_for_token;
         $datas['api'] = $api_for_token;
         $datas['username'] = isset($_POST['username']) ? sanitize_text_field(wp_unslash($_POST['username'])) : ($datas['username'] ?? '');
@@ -161,6 +164,19 @@ function lsky_display() {
     $has_update_channel_settings = lsky_has_update_channel_settings();
     $update_settings = $has_update_channel_settings ? SelfHostedUpdater::get_settings() : [];
     // LSKY_GITHUB_CHANNEL_END
+    wp_enqueue_script(
+        'lsky-settings',
+        plugins_url('../static/settings.js', __FILE__),
+        [],
+        '2.0.5',
+        true
+    );
+    wp_localize_script('lsky-settings', 'LskySettings', [
+        'ajaxUrl' => admin_url('admin-ajax.php'),
+        'savedAlbumId' => $saved_album_id,
+        'savedStorageId' => $saved_storage_id,
+        'nonce' => wp_create_nonce(LskyCommon::AJAX_NONCE_ACTION),
+    ]);
 ?>
 <style>
     .lsky-settings-page {
@@ -587,130 +603,6 @@ function lsky_display() {
     </form>
 </div>
 
-<script type="text/javascript">
-    var ajaxurl = "<?php echo esc_url(admin_url('admin-ajax.php')); ?>";
-    var savedAlbumId = "<?php echo esc_js($saved_album_id); ?>";
-    var savedStorageId = "<?php echo esc_js($saved_storage_id); ?>";
-    var lskySettingsNonce = "<?php echo esc_js(wp_create_nonce(LskyCommon::AJAX_NONCE_ACTION)); ?>";
-</script>
-
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    function toggleV2Fields() {
-        const version = document.getElementById('api_version').value;
-        const isFree = document.getElementById('open_source').value;
-
-        toggleFieldGroup('.v2-only', version === 'v2');
-        toggleFieldGroup('.v1-only', version === 'v1');
-        toggleFieldGroup('.free_only', isFree === 'yes' && version === 'v1');
-        toggleFieldGroup('.paid_only', isFree === 'no' || version === 'v2');
-
-        if (version === 'v2') {
-            fetchV2Data();
-        }
-    }
-
-    function toggleFieldGroup(selector, visible) {
-        document.querySelectorAll(selector).forEach(el => {
-            el.hidden = !visible;
-            el.querySelectorAll('input, select, textarea, button').forEach(control => {
-                control.disabled = !visible;
-            });
-        });
-    }
-
-    function buildApiEndpoint(api, version) {
-        let base = api.trim();
-        if (!base) {
-            return '';
-        }
-
-        if (!/^https?:\/\//i.test(base)) {
-            base = `https://${base}`;
-        }
-
-        base = base
-            .replace(/\/api\/v[12]\/?$/i, '')
-            .replace(/\/api\/?$/i, '')
-            .replace(/\/+$/, '');
-
-        return `${base}/api/${version === 'v2' ? 'v2' : 'v1'}`;
-    }
-
-    function updateApiPreview() {
-        const preview = document.getElementById('lsky-api-preview');
-        const api = document.querySelector('[name="api"]').value;
-        const version = document.getElementById('api_version').value;
-        preview.textContent = buildApiEndpoint(api, version) || '未填写';
-    }
-
-    async function fetchV2Data() {
-    const api = buildApiEndpoint(document.querySelector('[name="api"]').value, document.getElementById('api_version').value);
-    const tokenField = document.querySelector('[name="tokens"]:not(:disabled)');
-    const token = tokenField ? tokenField.value : '';
-
-    const albumSelect = document.getElementById('album_id');
-    const storageSelect = document.getElementById('storage_id');
-
-    function resetSelect(select, label, value = '') {
-        select.replaceChildren(new Option(label, value));
-    }
-
-    resetSelect(albumSelect, '加载中...');
-    resetSelect(storageSelect, '加载中...');
-    albumSelect.disabled = true;
-    storageSelect.disabled = true;
-
-    try {
-        const res = await fetch(ajaxurl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-                action: 'lsky_fetch_v2_meta',
-                api: api,
-                token: token,
-                nonce: lskySettingsNonce
-            })
-        });
-
-        const data = await res.json();
-        resetSelect(albumSelect, '请选择相册');
-        resetSelect(storageSelect, '请选择存储策略');
-
-        if (data.success) {
-            data.data.albums.forEach(item => {
-                const option = new Option(item.name, item.id);
-                option.selected = String(item.id) === String(savedAlbumId);
-                albumSelect.add(option);
-            });
-
-            data.data.storages.forEach(item => {
-                const option = new Option(item.name, item.id);
-                option.selected = String(item.id) === String(savedStorageId);
-                storageSelect.add(option);
-            });
-        } else {
-            resetSelect(albumSelect, '无法加载相册');
-            resetSelect(storageSelect, '无法加载存储策略');
-        }
-    } catch (error) {
-        resetSelect(albumSelect, '加载失败');
-        resetSelect(storageSelect, '加载失败');
-    } finally {
-        albumSelect.disabled = false;
-        storageSelect.disabled = false;
-    }
-}
-
-
-    document.getElementById('api_version').addEventListener('change', toggleV2Fields);
-    document.getElementById('api_version').addEventListener('change', updateApiPreview);
-    document.getElementById('api').addEventListener('input', updateApiPreview);
-    document.getElementById('open_source').addEventListener('change', toggleV2Fields);
-    toggleV2Fields();
-    updateApiPreview();
-});
-</script>
 <?php
 }
 ?>
