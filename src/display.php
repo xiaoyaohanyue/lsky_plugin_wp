@@ -6,6 +6,9 @@ require_once __DIR__ . '/LskyAPIV1.php';
 
 use src\LskyCommon;
 use src\LskyAPIV1;
+// LSKY_GITHUB_CHANNEL_BEGIN
+use src\SelfHostedUpdater;
+// LSKY_GITHUB_CHANNEL_END
 use src\Utils;
 
 function lsky_normalize_api_base($api) {
@@ -33,6 +36,37 @@ function lsky_build_api_endpoint($api, $api_version) {
 
     return $base . '/api/' . $version;
 }
+
+// LSKY_GITHUB_CHANNEL_BEGIN
+function lsky_has_update_channel_settings() {
+    return defined('LSKY_SELF_HOSTED_UPDATES') && LSKY_SELF_HOSTED_UPDATES && class_exists(SelfHostedUpdater::class);
+}
+
+function lsky_apply_update_channel_settings(&$datas) {
+    if (!lsky_has_update_channel_settings()) {
+        return;
+    }
+
+    $defaults = SelfHostedUpdater::defaults();
+    $channel = isset($_POST['update_channel'])
+        ? SelfHostedUpdater::sanitize_channel(wp_unslash($_POST['update_channel']))
+        : $defaults['channel'];
+    $custom_url = isset($_POST['custom_update_url'])
+        ? SelfHostedUpdater::sanitize_manifest_url(wp_unslash($_POST['custom_update_url']))
+        : '';
+    $github_repo = isset($_POST['github_update_repo'])
+        ? SelfHostedUpdater::sanitize_github_repo(wp_unslash($_POST['github_update_repo']))
+        : $defaults['github_repo'];
+
+    if ($channel === SelfHostedUpdater::CHANNEL_CUSTOM && $custom_url === '') {
+        $channel = SelfHostedUpdater::CHANNEL_FJWR;
+    }
+
+    $datas['update_channel'] = $channel;
+    $datas['custom_update_url'] = $custom_url;
+    $datas['github_update_repo'] = $github_repo;
+}
+// LSKY_GITHUB_CHANNEL_END
 
 function lsky_display() {
     if (!current_user_can('manage_options')) {
@@ -74,6 +108,9 @@ function lsky_display() {
         $datas['album_id'] = $datas['album_id'] ? (string) $datas['album_id'] : '';
         $datas['storage_id'] = $datas['storage_id'] ? (string) $datas['storage_id'] : '';
         $datas['switch'] = isset($_POST['switch']) && $_POST['switch'] === 'enable' ? 'enable' : 'disable';
+        // LSKY_GITHUB_CHANNEL_BEGIN
+        lsky_apply_update_channel_settings($datas);
+        // LSKY_GITHUB_CHANNEL_END
         if ($can_save) {
             update_option('lsky_setting', $datas);
             echo '<div id="message" class="updated fade">设置已保存！</div>';
@@ -92,6 +129,9 @@ function lsky_display() {
         $datas['username'] = isset($_POST['username']) ? sanitize_text_field(wp_unslash($_POST['username'])) : ($datas['username'] ?? '');
         $password = isset($_POST['password']) ? sanitize_text_field(wp_unslash($_POST['password'])) : '';
         $datas['password'] = '';
+        // LSKY_GITHUB_CHANNEL_BEGIN
+        lsky_apply_update_channel_settings($datas);
+        // LSKY_GITHUB_CHANNEL_END
         if (empty($datas['username']) || empty($password)) {
             echo '<div id="message" class="error fade">更新 Tokens 需要填写用户名和密码，密码不会保存。</div>';
         } else {
@@ -117,6 +157,10 @@ function lsky_display() {
     $show_v2 = $api_version === 'v2';
     $show_free = $show_v1 && $open_source === 'yes';
     $show_paid = !$show_free;
+    // LSKY_GITHUB_CHANNEL_BEGIN
+    $has_update_channel_settings = lsky_has_update_channel_settings();
+    $update_settings = $has_update_channel_settings ? SelfHostedUpdater::get_settings() : [];
+    // LSKY_GITHUB_CHANNEL_END
 ?>
 <style>
     .lsky-settings-page {
@@ -315,6 +359,52 @@ function lsky_display() {
         display: none !important;
     }
 
+    /* LSKY_GITHUB_CHANNEL_BEGIN */
+    .lsky-update-channel-options {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+
+    .lsky-update-channel-card {
+        position: relative;
+        display: block;
+        min-height: 104px;
+        margin: 0;
+        padding: 14px 14px 14px 42px;
+        border: 1px solid #dcdcde;
+        border-radius: 6px;
+        background: #fff;
+        cursor: pointer;
+    }
+
+    .lsky-update-channel-card input {
+        position: absolute;
+        top: 18px;
+        left: 14px;
+    }
+
+    .lsky-update-channel-card strong {
+        display: block;
+        margin-bottom: 6px;
+        color: #1d2327;
+    }
+
+    .lsky-update-channel-card span {
+        display: block;
+        color: #646970;
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    .lsky-update-channel-card:has(input:checked) {
+        border-color: #2271b1;
+        background: #f0f6fc;
+        box-shadow: 0 0 0 1px #2271b1;
+    }
+    /* LSKY_GITHUB_CHANNEL_END */
+
     @media (max-width: 782px) {
         .lsky-page-header,
         .lsky-actions {
@@ -329,6 +419,12 @@ function lsky_display() {
         .lsky-field-grid {
             grid-template-columns: 1fr;
         }
+
+        /* LSKY_GITHUB_CHANNEL_BEGIN */
+        .lsky-update-channel-options {
+            grid-template-columns: 1fr;
+        }
+        /* LSKY_GITHUB_CHANNEL_END */
 
         .lsky-section,
         .lsky-actions {
@@ -445,6 +541,43 @@ function lsky_display() {
                     </fieldset>
                 </div>
             </section>
+
+            <?php // LSKY_GITHUB_CHANNEL_BEGIN ?>
+            <?php if ($has_update_channel_settings) : ?>
+                <section class="lsky-section">
+                    <h2 class="lsky-section-title"><span class="dashicons dashicons-update"></span>更新渠道</h2>
+                    <div class="lsky-update-channel-options">
+                        <label class="lsky-update-channel-card">
+                            <input type="radio" name="update_channel" value="<?php echo esc_attr(SelfHostedUpdater::CHANNEL_FJWR); ?>" <?php checked($update_settings['channel'], SelfHostedUpdater::CHANNEL_FJWR); ?>>
+                            <strong>fjwr.xyz 更新服务</strong>
+                            <span>默认渠道。读取 fjwr.xyz 的 update.json，并下载 GitHub Release 中的 github 包。</span>
+                        </label>
+                        <label class="lsky-update-channel-card">
+                            <input type="radio" name="update_channel" value="<?php echo esc_attr(SelfHostedUpdater::CHANNEL_GITHUB); ?>" <?php checked($update_settings['channel'], SelfHostedUpdater::CHANNEL_GITHUB); ?>>
+                            <strong>GitHub Source code</strong>
+                            <span>读取 GitHub latest release，并下载 GitHub 自动生成的 Source code zip。</span>
+                        </label>
+                        <label class="lsky-update-channel-card">
+                            <input type="radio" name="update_channel" value="<?php echo esc_attr(SelfHostedUpdater::CHANNEL_CUSTOM); ?>" <?php checked($update_settings['channel'], SelfHostedUpdater::CHANNEL_CUSTOM); ?>>
+                            <strong>自定义 Manifest</strong>
+                            <span>使用你自己维护的 update.json，适合私有镜像或自托管发布。</span>
+                        </label>
+                    </div>
+                    <div class="lsky-field-grid">
+                        <div class="lsky-field">
+                            <label for="github_update_repo">GitHub 仓库</label>
+                            <input type="text" id="github_update_repo" name="github_update_repo" value="<?php echo esc_attr($update_settings['github_repo']); ?>" placeholder="xiaoyaohanyue/lsky_plugin_wp" />
+                            <p class="lsky-help">仅选择 GitHub Source code 渠道时使用。</p>
+                        </div>
+                        <div class="lsky-field is-wide">
+                            <label for="custom_update_url">自定义 Manifest 地址</label>
+                            <input type="text" id="custom_update_url" name="custom_update_url" value="<?php echo esc_attr($update_settings['manifest_url']); ?>" placeholder="https://example.com/wp-plugin-updates/lsky_plugin_wp/update.json" />
+                            <p class="lsky-help">仅选择自定义 Manifest 渠道时使用，格式需与 update.example.json 一致。</p>
+                        </div>
+                    </div>
+                </section>
+            <?php endif; ?>
+            <?php // LSKY_GITHUB_CHANNEL_END ?>
 
             <div class="lsky-actions">
                 <p class="lsky-actions-note">保存后，新上传的图片会按当前策略处理。</p>

@@ -48,6 +48,12 @@ tar \
 
 if [[ "$CHANNEL" == "wporg" ]]; then
   rm -f "$STAGE_PLUGIN/src/SelfHostedUpdater.php"
+  awk '
+    /LSKY_GITHUB_CHANNEL_BEGIN/ { skip = 1; next }
+    /LSKY_GITHUB_CHANNEL_END/ { skip = 0; next }
+    !skip { print }
+  ' "$STAGE_PLUGIN/src/display.php" > "$STAGE_PLUGIN/src/display.php.tmp"
+  mv "$STAGE_PLUGIN/src/display.php.tmp" "$STAGE_PLUGIN/src/display.php"
   mv "$STAGE_PLUGIN/LskyPro.php" "$STAGE_PLUGIN/$WPORG_SLUG.php"
   awk '
     /^[[:space:]]*\*[[:space:]]Update URI:/ { next }

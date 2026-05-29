@@ -23,6 +23,7 @@ use src\SelfHostedUpdater;
 
 LskyCommon::cleanup_legacy_password();
 if (class_exists(SelfHostedUpdater::class)) {
+    defined('LSKY_SELF_HOSTED_UPDATES') || define('LSKY_SELF_HOSTED_UPDATES', true);
     new SelfHostedUpdater(__FILE__);
 }
 

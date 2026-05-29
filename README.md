@@ -99,7 +99,7 @@ sudo apt-get install -y zip tar gawk
 本插件支持两个发布渠道：
 
 * WordPress.org 审核包：不包含 `Update URI` 和自托管更新器，由 WordPress.org 官方更新系统处理。
-* GitHub/自建发布包：包含 `Update URI` 和自托管更新器，用于兼容老版本用户。
+* GitHub/自建发布包：包含 `Update URI` 和自托管更新器，用于 `2.0.5` 及之后版本的自建渠道更新。
 
 构建命令：
 
@@ -129,9 +129,11 @@ lsky_plugin_wp-github.zip
 
 GitHub Actions 会在每次 push / pull request 时构建两个渠道的包作为 artifacts；当推送 `v*` tag 时，会自动将 `build/lsky_plugin_wp-github.zip` 上传到 GitHub Release。
 
+旧版本用户的第一次升级路径需要单独注意：`2.0.4` 及更早版本使用旧更新器读取 GitHub `releases/latest` 接口，并下载 GitHub 自动生成的 Source code zip（`zipball_url`），不是 Release asset 中的 `lsky_plugin_wp-github.zip`。因此发布 `v2.0.5` tag 本身仍然是必须的，旧更新器会通过该 tag 的 Source code zip 升级到 `2.0.5`。
+
 ## GitHub/自建渠道更新
 
-GitHub/自建发布包通过以下地址检查更新：
+从 `2.0.5` 开始，GitHub/自建发布包默认通过以下地址检查更新：
 
 ```text
 https://fjwr.xyz/wp-plugin-updates/lsky_plugin_wp/update.json
@@ -152,7 +154,15 @@ https://fjwr.xyz/wp-plugin-updates/lsky_plugin_wp/update.json
 }
 ```
 
-其中 `download_url` 应指向 GitHub Release 中的 `lsky_plugin_wp-github.zip`。
+其中 `download_url` 应指向 GitHub Release 中的 `lsky_plugin_wp-github.zip`。这是 `2.0.5` 及之后版本默认使用的新更新通道；老版本用户从 `2.0.4` 升级到 `2.0.5` 时，仍由旧更新器下载 GitHub Source code zip 完成过渡。
+
+GitHub/自建包的后台设置页提供更新渠道选择：
+
+* `fjwr.xyz 更新服务`：默认选项，读取 `https://fjwr.xyz/wp-plugin-updates/lsky_plugin_wp/update.json`。
+* `GitHub Source code`：读取 GitHub `releases/latest`，并下载 GitHub 自动生成的 Source code zip。
+* `自定义 Manifest`：填写自己的 `update.json` 地址，格式与 `update.example.json` 一致。
+
+WordPress.org 审核包不会包含 `Update URI`、自托管更新器或更新渠道设置。
 
 ## 更新细节
 
