@@ -5,7 +5,7 @@
  * Plugin Name: LskyPro（兰空图床）插件
  * Plugin URI: https://github.com/xiaoyaohanyue/lsky_plugin_wp
  * Description: 将 WordPress 媒体上传至 LskyPro（兰空图床）
- * Version: 2.0.4
+ * Version: 2.0.5
  * Author: 妖月
  * Author URI: https://fjwr.xyz
  * Requires PHP: 7.4
