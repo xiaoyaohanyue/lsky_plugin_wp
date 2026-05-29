@@ -2,27 +2,32 @@
 
 
 /**
- * Plugin Name: Lsky 图床插件
+ * Plugin Name: LskyPro（兰空图床）插件
  * Plugin URI: https://github.com/xiaoyaohanyue/lsky_plugin_wp
- * Description: 将 WordPress 媒体上传至 Lsky 图床
+ * Description: 将 WordPress 媒体上传至 LskyPro（兰空图床）
  * Version: 2.0.4
  * Author: 妖月
  * Author URI: https://fjwr.xyz
+ * Requires PHP: 7.4
+ * Text Domain: lsky-plugin-wp
+ * License: GPLv2 or later
+ * Update URI: https://fjwr.xyz/wp-plugin-updates/lsky_plugin_wp
  */
 
 if (!defined('ABSPATH')) exit;
 require_once plugin_dir_path(__FILE__) . '/autoload.php';
 
-use src\Update;
 use src\LskyCommon;
+use src\SelfHostedUpdater;
 
-if (is_admin()) {
-    new Update(__FILE__);
+LskyCommon::cleanup_legacy_password();
+if (class_exists(SelfHostedUpdater::class)) {
+    new SelfHostedUpdater(__FILE__);
 }
 
-add_filter('plugin_action_links_lsky_plugin_wp/LskyPro.php', array(LskyCommon::class,'lsky_plugin_settings_link'));
+add_filter('plugin_action_links_' . plugin_basename(__FILE__), array(LskyCommon::class,'lsky_plugin_settings_link'));
 add_action('admin_menu',array(LskyCommon::class,'lsky_menu'));
 
-require 'src/display.php';
-require 'src/function.php';
+require plugin_dir_path(__FILE__) . 'src/display.php';
+require plugin_dir_path(__FILE__) . 'src/function.php';
 ?>

@@ -1,0 +1,10 @@
+{
+  "version": "2.0.5",
+  "requires": "6.0",
+  "tested": "6.8",
+  "requires_php": "7.4",
+  "homepage": "https://github.com/xiaoyaohanyue/lsky_plugin_wp",
+  "download_url": "https://github.com/xiaoyaohanyue/lsky_plugin_wp/releases/download/v2.0.5/lsky_plugin_wp-github.zip",
+  "description": "将 WordPress 媒体上传到 LskyPro（兰空图床）。",
+  "changelog": "<ul><li>优化设置页与安全校验。</li></ul>"
+}

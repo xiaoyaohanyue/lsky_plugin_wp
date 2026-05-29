@@ -1,6 +1,8 @@
 <?php
 
 namespace src;
+if (!defined('ABSPATH')) exit;
+
 use src\LskyCommon;
 
 add_action('wp_ajax_lsky_fetch_v2_meta', array(LskyCommon::class,'lsky_fetch_v2_meta'));

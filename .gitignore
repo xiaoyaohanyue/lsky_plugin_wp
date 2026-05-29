@@ -1,1 +1,7 @@
 *.log
+logs/
+*.zip
+node_modules/
+.playwright-tools/
+tmp/
+build/

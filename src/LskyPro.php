@@ -1,6 +1,8 @@
 <?php
 namespace src;
 
+if (!defined('ABSPATH')) exit;
+
 abstract class LskyPro
 {
     public $lsky_api;
@@ -14,12 +16,19 @@ abstract class LskyPro
     public $lsky_username;
     public $lsky_password;
 
-    public static $lsky_dir = WP_PLUGIN_DIR . '/lsky_plugin_wp/';
-    public static $lsky_log_dir = WP_PLUGIN_DIR . '/lsky_plugin_wp/logs/';
+    public static $lsky_dir = '';
+    public static $lsky_log_dir = '';
 
     public function __construct()
     {
-        $setting = unserialize(get_option('lsky_setting'));
+        self::$lsky_dir = trailingslashit(dirname(__DIR__));
+        self::$lsky_log_dir = self::$lsky_dir . 'logs/';
+
+        $setting = maybe_unserialize(get_option('lsky_setting', []));
+        if (!is_array($setting)) {
+            $setting = [];
+        }
+
         $this->lsky_api = $setting['api'] ?? '';
         $this->lsky_token = $setting['tokens'] ?? '';
         $this->lsky_permission = $setting['permission'] ?? '';
@@ -29,6 +38,6 @@ abstract class LskyPro
         $this->lsky_album_id = $setting['album_id'] ?? '';
         $this->lsky_storage_id = $setting['storage_id'] ?? '';
         $this->lsky_username = $setting['username'] ?? '';
-        $this->lsky_password = $setting['password'] ?? '';
+        $this->lsky_password = '';
     }
 }

@@ -1,0 +1,12 @@
+.git
+.gitignore
+.distignore
+logs
+*.log
+*.zip
+node_modules
+.playwright-tools
+tmp
+build
+build-channel.sh
+.github

@@ -1,13 +1,30 @@
 <?php
 
 namespace src;
+if (!defined('ABSPATH')) exit;
+
 use src\LskyCommon;
 use src\Utils;
 
 class LskyAPIV2
 {
+    private static function close_finfo($finfo)
+    {
+        if (PHP_VERSION_ID < 80500) {
+            finfo_close($finfo);
+        }
+
+        unset($finfo);
+    }
 
     public static function get_album($api, $token){
+        if (empty($api) || empty($token)) {
+            return [
+                'status' => false,
+                'message' => '请先填写 API 地址和 Token',
+            ];
+        }
+
         $url = $api . '/user/albums';
         $headers = [
             'Content-Type: application/json',
@@ -19,6 +36,13 @@ class LskyAPIV2
     }
 
     public static function get_storage($api, $token){
+        if (empty($api) || empty($token)) {
+            return [
+                'status' => false,
+                'message' => '请先填写 API 地址和 Token',
+            ];
+        }
+
         $url = $api . '/group';
         $headers = [
             'Content-Type: application/json',
@@ -36,10 +60,31 @@ class LskyAPIV2
         $data['storage_id'] = LskyCommon::api_info('storage_id');
         $data['album_id'] = LskyCommon::api_info('album_id');
         $data['is_public'] = LskyCommon::api_info('permission');
+        if (empty($data['api']) || empty($data['token'])) {
+            return [
+                'status' => false,
+                'message' => '请先配置 API 地址和 Token',
+            ];
+        }
+
+        if (!function_exists('curl_file_create')) {
+            return [
+                'status' => false,
+                'message' => '当前 PHP 环境未启用 cURL 文件上传支持',
+            ];
+        }
+
+        if (!function_exists('finfo_open')) {
+            return [
+                'status' => false,
+                'message' => '当前 PHP 环境未启用 fileinfo 扩展',
+            ];
+        }
+
         $url = $data["api"] . '/upload';
         $finfo = finfo_open(FILEINFO_MIME); 
         $mimetype = finfo_file($finfo, $data["file"]); 
-        finfo_close($finfo);
+        self::close_finfo($finfo);
         $image = curl_file_create( $data["file"], $mimetype, $data["file"] );
         $post_data = [ 
             'file' => $image,

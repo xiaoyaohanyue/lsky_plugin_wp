@@ -1,0 +1,45 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - 'v*'
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y zip
+
+      - name: Build WordPress.org package
+        run: bash build-channel.sh wporg
+
+      - name: Build GitHub package
+        run: bash build-channel.sh github
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: lsky-plugin-packages
+          path: |
+            build/lsky-plugin-wp-wporg.zip
+            build/lsky_plugin_wp-github.zip
+
+      - name: Publish GitHub release package
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/lsky_plugin_wp-github.zip
+          fail_on_unmatched_files: true

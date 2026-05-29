@@ -1,15 +1,29 @@
 <?php
 
 namespace src;
+if (!defined('ABSPATH')) exit;
+
 use src\LskyCommon;
 use src\Utils;
 
 class LskyAPIV1
 {
-
-    public static function generate_token($username,$password)
+    private static function close_finfo($finfo)
     {
-        $lsky_api = LskyCommon::api_info('api');
+        if (PHP_VERSION_ID < 80500) {
+            finfo_close($finfo);
+        }
+
+        unset($finfo);
+    }
+
+    public static function generate_token($username,$password,$api = '')
+    {
+        $lsky_api = $api ?: LskyCommon::api_info('api');
+        if (empty($lsky_api)) {
+            return '请先填写 API 地址';
+        }
+
         $url = $lsky_api . '/tokens';
         $post_data = [
             'email' => $username,
@@ -19,31 +33,34 @@ class LskyAPIV1
             'Content-Type: application/json'
         ];
         $response = Utils::curl_post($url, json_encode($post_data), $headers);
-        if (true == $response['status']){
+        if (isset($response['status']) && true == $response['status'] && !empty($response['data']['token'])){
             return $response['data']['token'];
         }else{
-            return $response['message'];
+            return $response['message'] ?? 'Token 获取失败';
         }
     }
 
-    public static function removealltoken(){
-        $lsky_api = LskyCommon::api_info('api');
+    public static function removealltoken($api = '', $token = ''){
+        $lsky_api = $api ?: LskyCommon::api_info('api');
+        $lsky_token = $token ?: LskyCommon::api_info('token');
         $url = $lsky_api . '/tokens';
         $headers = [
             'Content-Type: application/json',
-            'Authorization: Bearer ' . LskyCommon::api_info('token')
+            'Authorization: Bearer ' . $lsky_token
         ];
         $response = Utils::curl_delete($url, $headers);
-        return $response['status'];
+        return $response['status'] ?? false;
     }
 
-    public static function refreash_token(){
-        if (self::removealltoken() == true){
-            $username = LskyCommon::api_info('username');
-            $password = LskyCommon::api_info('password');
-            $token = self::generate_token($username,$password);
+    public static function refreash_token($api = '', $username = '', $password = '', $old_token = ''){
+        if (empty($username) || empty($password)) {
+            return $old_token ?: LskyCommon::api_info('token');
+        }
+
+        if (self::removealltoken($api, $old_token) == true){
+            $token = self::generate_token($username,$password,$api);
         }else{
-            $token = LskyCommon::api_info('token');
+            $token = $old_token ?: LskyCommon::api_info('token');
         }
         return $token;
     }
@@ -52,10 +69,31 @@ class LskyAPIV1
         $data['file'] = $imgname;
         $data['api'] = LskyCommon::api_info('api');
         $data['token'] = LskyCommon::api_info('token');
+        if (empty($data['api']) || empty($data['token'])) {
+            return [
+                'status' => false,
+                'message' => '请先配置 API 地址和 Token',
+            ];
+        }
+
+        if (!function_exists('curl_file_create')) {
+            return [
+                'status' => false,
+                'message' => '当前 PHP 环境未启用 cURL 文件上传支持',
+            ];
+        }
+
+        if (!function_exists('finfo_open')) {
+            return [
+                'status' => false,
+                'message' => '当前 PHP 环境未启用 fileinfo 扩展',
+            ];
+        }
+
         $url = $data["api"] . '/upload';
         $finfo = finfo_open(FILEINFO_MIME); 
         $mimetype = finfo_file($finfo, $data["file"]); 
-        finfo_close($finfo);
+        self::close_finfo($finfo);
         $image = curl_file_create( $data["file"], $mimetype, $data["file"] );
         if (LskyCommon::api_info('open_source') == 'no'){
             $post_data = [
