@@ -1,6 +1,6 @@
-=== LskyPro（兰空图床）插件 ===
+=== YAOYUE Image Upload for LskyPro ===
 Contributors: yaoyue
-Tags: lskypro, image hosting, media, upload, cdn
+Tags: image hosting, media, upload, external media, remote storage
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
@@ -12,7 +12,7 @@ Upload WordPress media images to LskyPro and replace local media URLs with remot
 
 == Description ==
 
-LskyPro plugin uploads image files from the WordPress media workflow to a LskyPro image hosting service configured by the site administrator. After a successful upload, the plugin replaces the media library image URL with the remote image URL returned by LskyPro.
+YAOYUE Image Upload for LskyPro uploads image files from the WordPress media workflow to a LskyPro image hosting service configured by the site administrator. After a successful upload, the plugin replaces the media library image URL with the remote image URL returned by LskyPro.
 
 Features:
 
@@ -45,7 +45,7 @@ LskyPro project: https://github.com/lsky-org/lsky-pro
 
 == Installation ==
 
-1. Upload the plugin directory to `/wp-content/plugins/lskypro`.
+1. Upload the plugin directory to `/wp-content/plugins/yaoyue-image-upload-for-lskypro`.
 2. Activate the plugin through the WordPress Plugins screen.
 3. Open `Settings -> Lsky Pro Settings`.
 4. Select the API version.
@@ -83,7 +83,7 @@ No. The plugin does not add public "powered by" links or credit links to the fro
 * Improved settings storage compatibility.
 * Added WordPress.org and GitHub/self-hosted dual-channel build flow.
 * GitHub/self-hosted channel supports `Update URI` and a self-hosted update manifest.
-* WordPress.org package uses the `lskypro/lskypro.php` structure.
+* WordPress.org package uses the `yaoyue-image-upload-for-lskypro/yaoyue-image-upload-for-lskypro.php` structure.
 * GitHub/self-hosted package keeps the legacy `lsky_plugin_wp/LskyPro.php` structure.
 * Settings page now requires only the LskyPro domain and builds `/api/v1` or `/api/v2` automatically.
 * v1 passwords are no longer stored.

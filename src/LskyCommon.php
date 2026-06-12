@@ -72,8 +72,8 @@ class LskyCommon extends LskyPro
 
     public static function lsky_menu(){
         return add_menu_page(
-            "Lsky Pro设置",
-            "Lsky Pro设置",
+            "YAOYUE Image Upload",
+            "YAOYUE Image Upload",
             'manage_options',
             "lsky_settings",
             'lsky_display',
@@ -237,10 +237,10 @@ class LskyCommon extends LskyPro
     {
         $post_id = absint($post->ID);
         $form_fields["upload-to-lsky"] = array(
-            "label" => esc_html__("图床替换", "lskypro"),
+            "label" => esc_html__("图床替换", "yaoyue-image-upload-for-lskypro"),
             "input" => "html",
-            "html" => '<button type="button" class="button-secondary lsky-upload-one" data-post-id="' . esc_attr($post_id) . '">' . esc_html__("一键替换", "lskypro") . '</button>',
-            "helps" => esc_html__("实现一键将该图片上传到外部图床并替换数据库信息。", "lskypro")
+            "html" => '<button type="button" class="button-secondary lsky-upload-one" data-post-id="' . esc_attr($post_id) . '">' . esc_html__("一键替换", "yaoyue-image-upload-for-lskypro") . '</button>',
+            "helps" => esc_html__("实现一键将该图片上传到外部图床并替换数据库信息。", "yaoyue-image-upload-for-lskypro")
 
           );
         return $form_fields;

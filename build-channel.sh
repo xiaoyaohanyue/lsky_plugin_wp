@@ -17,7 +17,7 @@ done
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SOURCE_SLUG="lsky_plugin_wp"
-WPORG_SLUG="lskypro"
+WPORG_SLUG="yaoyue-image-upload-for-lskypro"
 PLUGIN_SLUG="$SOURCE_SLUG"
 if [[ "$CHANNEL" == "wporg" ]]; then
   PLUGIN_SLUG="$WPORG_SLUG"
@@ -54,6 +54,12 @@ if [[ "$CHANNEL" == "wporg" ]]; then
     !skip { print }
   ' "$STAGE_PLUGIN/src/display.php" > "$STAGE_PLUGIN/src/display.php.tmp"
   mv "$STAGE_PLUGIN/src/display.php.tmp" "$STAGE_PLUGIN/src/display.php"
+  awk '
+    /LSKY_GITHUB_CHANNEL_BEGIN/ { skip = 1; next }
+    /LSKY_GITHUB_CHANNEL_END/ { skip = 0; next }
+    !skip { print }
+  ' "$STAGE_PLUGIN/static/settings.css" > "$STAGE_PLUGIN/static/settings.css.tmp"
+  mv "$STAGE_PLUGIN/static/settings.css.tmp" "$STAGE_PLUGIN/static/settings.css"
   mv "$STAGE_PLUGIN/LskyPro.php" "$STAGE_PLUGIN/__wporg-main.php"
   mv "$STAGE_PLUGIN/__wporg-main.php" "$STAGE_PLUGIN/$WPORG_SLUG.php"
   awk '

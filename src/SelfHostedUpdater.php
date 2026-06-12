@@ -220,7 +220,7 @@ class SelfHostedUpdater
         $update_uri = $this->get_update_uri($settings);
 
         return (object) [
-            'name' => 'LskyPro（兰空图床）插件',
+            'name' => 'YAOYUE Image Upload for LskyPro',
             'slug' => $this->plugin_dir,
             'version' => $manifest['version'],
             'author' => '妖月',

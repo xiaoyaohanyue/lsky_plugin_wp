@@ -70,7 +70,7 @@ function lsky_apply_update_channel_settings(&$datas) {
 
 function lsky_display() {
     if (!current_user_can('manage_options')) {
-        wp_die(esc_html__('无权访问该设置页。', 'lskypro'));
+        wp_die(esc_html__('无权访问该设置页。', 'yaoyue-image-upload-for-lskypro'));
     }
 
     $action = isset($_POST['action']) ? sanitize_key(wp_unslash($_POST['action'])) : '';
@@ -171,6 +171,12 @@ function lsky_display() {
         '2.0.5',
         true
     );
+    wp_enqueue_style(
+        'lsky-settings',
+        plugins_url('../static/settings.css', __FILE__),
+        [],
+        '2.0.5'
+    );
     wp_localize_script('lsky-settings', 'LskySettings', [
         'ajaxUrl' => admin_url('admin-ajax.php'),
         'savedAlbumId' => $saved_album_id,
@@ -178,290 +184,10 @@ function lsky_display() {
         'nonce' => wp_create_nonce(LskyCommon::AJAX_NONCE_ACTION),
     ]);
 ?>
-<style>
-    .lsky-settings-page {
-        max-width: 1120px;
-    }
-
-    .lsky-page-header {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 16px;
-        margin: 20px 0 16px;
-    }
-
-    .lsky-page-title {
-        margin: 0;
-        font-size: 24px;
-        line-height: 1.3;
-        font-weight: 600;
-        color: #1d2327;
-    }
-
-    .lsky-page-subtitle {
-        margin: 6px 0 0;
-        color: #646970;
-        font-size: 13px;
-    }
-
-    .lsky-status-group {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        justify-content: flex-end;
-    }
-
-    .lsky-pill {
-        display: inline-flex;
-        align-items: center;
-        min-height: 28px;
-        padding: 0 10px;
-        border: 1px solid #c3c4c7;
-        border-radius: 4px;
-        background: #fff;
-        color: #3c434a;
-        font-size: 12px;
-        font-weight: 600;
-    }
-
-    .lsky-pill.is-active {
-        border-color: #00a32a;
-        background: #edfaef;
-        color: #006b1b;
-    }
-
-    .lsky-pill.is-inactive {
-        border-color: #dcdcde;
-        background: #f6f7f7;
-        color: #646970;
-    }
-
-    .lsky-settings-panel {
-        overflow: hidden;
-        margin-bottom: 20px;
-        border: 1px solid #dcdcde;
-        border-radius: 6px;
-        background: #fff;
-        box-shadow: 0 1px 1px rgba(0, 0, 0, .04);
-    }
-
-    .lsky-section {
-        padding: 22px 24px;
-        border-bottom: 1px solid #f0f0f1;
-    }
-
-    .lsky-section:last-of-type {
-        border-bottom: 0;
-    }
-
-    .lsky-section-title {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin: 0 0 18px;
-        font-size: 15px;
-        line-height: 1.4;
-        color: #1d2327;
-    }
-
-    .lsky-section-title .dashicons {
-        width: 18px;
-        height: 18px;
-        font-size: 18px;
-        color: #2271b1;
-    }
-
-    .lsky-field-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(240px, 1fr));
-        gap: 18px 22px;
-    }
-
-    .lsky-field {
-        min-width: 0;
-    }
-
-    .lsky-field.is-wide {
-        grid-column: 1 / -1;
-    }
-
-    .lsky-field label,
-    .lsky-field legend {
-        display: block;
-        margin: 0 0 7px;
-        padding: 0;
-        font-size: 13px;
-        font-weight: 600;
-        color: #1d2327;
-    }
-
-    .lsky-field input[type="text"],
-    .lsky-field input[type="password"],
-    .lsky-field select {
-        width: 100%;
-        max-width: 520px;
-        min-height: 36px;
-    }
-
-    .lsky-inline-control {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        max-width: 620px;
-    }
-
-    .lsky-inline-control input {
-        flex: 1 1 auto;
-        min-width: 160px;
-    }
-
-    .lsky-help {
-        margin: 6px 0 0;
-        color: #646970;
-        font-size: 12px;
-        line-height: 1.5;
-    }
-
-    .lsky-radio-group {
-        display: inline-flex;
-        overflow: hidden;
-        border: 1px solid #c3c4c7;
-        border-radius: 4px;
-        background: #fff;
-    }
-
-    .lsky-radio-group label {
-        display: inline-flex;
-        align-items: center;
-        min-height: 34px;
-        margin: 0;
-        padding: 0 13px;
-        border-right: 1px solid #dcdcde;
-        font-weight: 500;
-        cursor: pointer;
-    }
-
-    .lsky-radio-group label:last-child {
-        border-right: 0;
-    }
-
-    .lsky-radio-group input {
-        margin: 0 6px 0 0;
-    }
-
-    .lsky-actions {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 16px 24px;
-        border-top: 1px solid #dcdcde;
-        background: #f6f7f7;
-    }
-
-    .lsky-actions-note {
-        margin: 0;
-        color: #646970;
-        font-size: 12px;
-    }
-
-    .lsky-actions .button-primary {
-        min-height: 36px;
-        padding: 0 18px;
-    }
-
-    .lsky-field[hidden] {
-        display: none !important;
-    }
-
-    /* LSKY_GITHUB_CHANNEL_BEGIN */
-    .lsky-update-channel-options {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 12px;
-        margin-bottom: 18px;
-    }
-
-    .lsky-update-channel-card {
-        position: relative;
-        display: block;
-        min-height: 104px;
-        margin: 0;
-        padding: 14px 14px 14px 42px;
-        border: 1px solid #dcdcde;
-        border-radius: 6px;
-        background: #fff;
-        cursor: pointer;
-    }
-
-    .lsky-update-channel-card input {
-        position: absolute;
-        top: 18px;
-        left: 14px;
-    }
-
-    .lsky-update-channel-card strong {
-        display: block;
-        margin-bottom: 6px;
-        color: #1d2327;
-    }
-
-    .lsky-update-channel-card span {
-        display: block;
-        color: #646970;
-        font-size: 12px;
-        line-height: 1.5;
-    }
-
-    .lsky-update-channel-card:has(input:checked) {
-        border-color: #2271b1;
-        background: #f0f6fc;
-        box-shadow: 0 0 0 1px #2271b1;
-    }
-    /* LSKY_GITHUB_CHANNEL_END */
-
-    @media (max-width: 782px) {
-        .lsky-page-header,
-        .lsky-actions {
-            align-items: stretch;
-            flex-direction: column;
-        }
-
-        .lsky-status-group {
-            justify-content: flex-start;
-        }
-
-        .lsky-field-grid {
-            grid-template-columns: 1fr;
-        }
-
-        /* LSKY_GITHUB_CHANNEL_BEGIN */
-        .lsky-update-channel-options {
-            grid-template-columns: 1fr;
-        }
-        /* LSKY_GITHUB_CHANNEL_END */
-
-        .lsky-section,
-        .lsky-actions {
-            padding-right: 16px;
-            padding-left: 16px;
-        }
-
-        .lsky-inline-control {
-            align-items: stretch;
-            flex-direction: column;
-        }
-
-        .lsky-inline-control .button {
-            width: fit-content;
-        }
-    }
-</style>
 <div class="wrap lsky-settings-page">
     <div class="lsky-page-header">
         <div>
-            <h1 class="lsky-page-title">LskyPro（兰空图床）设置</h1>
+            <h1 class="lsky-page-title">YAOYUE Image Upload for LskyPro</h1>
             <p class="lsky-page-subtitle">配置 LskyPro（兰空图床）API 连接、认证方式和媒体上传策略。</p>
         </div>
         <div class="lsky-status-group">
