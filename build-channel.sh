@@ -33,6 +33,7 @@ mkdir -p "$STAGE_PLUGIN"
 tar \
   --exclude='./.git' \
   --exclude='./.github' \
+  --exclude='./.claude' \
   --exclude='./.gitignore' \
   --exclude='./.distignore' \
   --exclude='./build' \
@@ -43,6 +44,7 @@ tar \
   --exclude='./.playwright-tools' \
   --exclude='./tmp' \
   --exclude='./build-channel.sh' \
+  --exclude='./release-wporg.sh' \
   --exclude='./update.example.json' \
   -C "$ROOT" -cf - . | tar -C "$STAGE_PLUGIN" -xf -
 
