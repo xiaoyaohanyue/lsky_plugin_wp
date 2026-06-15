@@ -190,6 +190,27 @@
     padding: 0 18px;
 }
 
+.lsky-maintenance-tool {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    max-width: 760px;
+}
+
+.lsky-maintenance-tool h3 {
+    margin: 0 0 6px;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.lsky-repair-result {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+    gap: 4px 16px;
+    margin: 8px 0 0 18px;
+}
+
 .lsky-field[hidden] {
     display: none !important;
 }
@@ -270,6 +291,15 @@
     .lsky-inline-control {
         align-items: stretch;
         flex-direction: column;
+    }
+
+    .lsky-maintenance-tool {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .lsky-repair-result {
+        grid-template-columns: 1fr;
     }
 
     .lsky-inline-control .button {

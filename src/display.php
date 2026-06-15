@@ -150,6 +150,20 @@ function lsky_display() {
         }
     }
 
+    if ($action == 'repairLegacySrcset') {
+        $repair_stats = LskyCommon::repair_legacy_srcset_data();
+        echo '<div id="message" class="updated fade"><p>历史图片数据修复完成。</p><ul class="lsky-repair-result">';
+        echo '<li>扫描图片附件：' . esc_html($repair_stats['attachments_scanned']) . '</li>';
+        echo '<li>Lsky 图床附件：' . esc_html($repair_stats['lsky_attachments']) . '</li>';
+        echo '<li>修复附件元数据：' . esc_html($repair_stats['attachment_metadata_repaired']) . '</li>';
+        echo '<li>补齐缩略图地址：' . esc_html($repair_stats['sizes_repaired']) . '</li>';
+        echo '<li>扫描历史内容：' . esc_html($repair_stats['content_posts_scanned']) . '</li>';
+        echo '<li>修复历史内容：' . esc_html($repair_stats['content_posts_repaired']) . '</li>';
+        echo '<li>修复内容 srcset：' . esc_html($repair_stats['content_srcsets_repaired']) . '</li>';
+        echo '<li>修复内容 src：' . esc_html($repair_stats['content_srcs_repaired']) . '</li>';
+        echo '</ul></div>';
+    }
+
     $api_version = LskyCommon::api_info('api_version');
     $open_source = LskyCommon::api_info('open_source');
     $saved_album_id = LskyCommon::api_info('album_id');
@@ -168,14 +182,14 @@ function lsky_display() {
         'lsky-settings',
         plugins_url('../static/settings.js', __FILE__),
         [],
-        '2.0.5',
+        '2.0.6',
         true
     );
     wp_enqueue_style(
         'lsky-settings',
         plugins_url('../static/settings.css', __FILE__),
         [],
-        '2.0.5'
+        '2.0.6'
     );
     wp_localize_script('lsky-settings', 'LskySettings', [
         'ajaxUrl' => admin_url('admin-ajax.php'),
@@ -281,6 +295,17 @@ function lsky_display() {
                             <label><input type="radio" name="switch" value="disable" <?php checked(LskyCommon::api_info('switch'), 'disable'); ?>> 禁用</label>
                         </div>
                     </fieldset>
+                </div>
+            </section>
+
+            <section class="lsky-section">
+                <h2 class="lsky-section-title"><span class="dashicons dashicons-admin-tools"></span>维护工具</h2>
+                <div class="lsky-maintenance-tool">
+                    <div>
+                        <h3>修复历史图片数据</h3>
+                        <p class="lsky-help">补齐旧版本已上传到 Lsky 的附件尺寸地址，修正旧 metadata 路径，并清理已写入文章内容的本地 srcset。</p>
+                    </div>
+                    <input class="button" type="submit" value="一键修复" onclick="document.getElementById('form_action').value='repairLegacySrcset';" />
                 </div>
             </section>
 

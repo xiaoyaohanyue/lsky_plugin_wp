@@ -5,7 +5,7 @@
  * Plugin Name: YAOYUE Image Upload for LskyPro
  * Plugin URI: https://github.com/xiaoyaohanyue/lsky_plugin_wp
  * Description: 将 WordPress 媒体上传至 LskyPro（兰空图床）
- * Version: 2.0.5
+ * Version: 2.0.6
  * Author: 妖月
  * Author URI: https://fjwr.xyz
  * Requires PHP: 7.4

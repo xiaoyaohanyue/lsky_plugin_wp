@@ -4,7 +4,7 @@ Tags: image hosting, media, upload, external media, remote storage
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.0.5
+Stable tag: 2.0.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -76,6 +76,14 @@ No. The plugin does not add public "powered by" links or credit links to the fro
 
 == Changelog ==
 
+= 2.0.6 =
+
+* Fixed responsive image `srcset` output for images uploaded to LskyPro.
+* Added remote size URLs and pathnames to attachment metadata for new uploads.
+* Added a maintenance tool to repair legacy LskyPro image metadata and hardcoded local `srcset` values in post content.
+* Fixed legacy original file path metadata and local cleanup when deleting LskyPro attachments.
+* Kept existing LskyPro-hosted images rendering from remote URLs even when automatic upload replacement is disabled.
+
 = 2.0.5 =
 
 * Improved settings page security checks and nonce validation.
@@ -113,6 +121,10 @@ No. The plugin does not add public "powered by" links or credit links to the fro
 * Added uninstall cleanup.
 
 == Upgrade Notice ==
+
+= 2.0.6 =
+
+Fixes responsive image display for block editor content and adds a one-click maintenance tool for legacy LskyPro image metadata and local `srcset` cleanup.
 
 = 2.0.5 =
 

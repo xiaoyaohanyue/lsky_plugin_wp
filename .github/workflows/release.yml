@@ -34,7 +34,7 @@ jobs:
         with:
           name: lsky-plugin-packages
           path: |
-            build/lsky-plugin-wp-wporg.zip
+            build/yaoyue-image-upload-for-lskypro-wporg.zip
             build/lsky_plugin_wp-github.zip
 
       - name: Publish GitHub release package

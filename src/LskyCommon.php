@@ -94,7 +94,7 @@ class LskyCommon extends LskyPro
             'lsky-upload-one',
             plugins_url('../static/post.js', __FILE__),
             ['jquery'],
-            '2.0.5',
+            '2.0.6',
             true
         );
 
@@ -120,6 +120,7 @@ class LskyCommon extends LskyPro
                     self::delete_local_upload_file($value['ori_path'] ?? '');
                 }
             }
+            self::delete_local_upload_file($data['ori_path'] ?? '');
         }else{
             LskyAPIV2::img_delete($data['key']);
             foreach($sizes as $value){
@@ -128,6 +129,7 @@ class LskyCommon extends LskyPro
                     self::delete_local_upload_file($value['ori_path'] ?? '');
                 }
             }
+            self::delete_local_upload_file($data['ori_path'] ?? '');
         }
     }
     
@@ -137,6 +139,357 @@ class LskyCommon extends LskyPro
             $url = get_post_field( 'guid', $post_id );
         }
         return $url;
+    }
+
+    private static function build_lsky_srcset_urls($image_meta, $attachment_id)
+    {
+        if (!is_array($image_meta) || empty($image_meta['key'])) {
+            return [];
+        }
+
+        $urls = [];
+        $guid = get_post_field('guid', $attachment_id);
+        if (!empty($guid)) {
+            $urls[wp_basename($guid)] = $guid;
+        }
+
+        if (!empty($image_meta['file']) && !empty($guid)) {
+            $urls[wp_basename($image_meta['file'])] = $guid;
+        }
+
+        $sizes = isset($image_meta['sizes']) && is_array($image_meta['sizes']) ? $image_meta['sizes'] : [];
+        foreach ($sizes as $size_meta) {
+            if (empty($size_meta['key']) || empty($size_meta['file'])) {
+                continue;
+            }
+
+            $filename = wp_basename($size_meta['file']);
+            $urls[$filename] = self::get_lsky_size_url($size_meta, $guid);
+        }
+
+        return array_filter($urls);
+    }
+
+    private static function get_lsky_size_url($size_meta, $guid)
+    {
+        if (!empty($size_meta['url'])) {
+            return $size_meta['url'];
+        }
+
+        if (!empty($size_meta['pathname'])) {
+            $scheme = wp_parse_url($guid, PHP_URL_SCHEME);
+            $host = wp_parse_url($guid, PHP_URL_HOST);
+            if (!empty($scheme) && !empty($host)) {
+                return $scheme . '://' . $host . '/' . ltrim($size_meta['pathname'], '/');
+            }
+        }
+
+        if (!empty($guid) && !empty($size_meta['file'])) {
+            return preg_replace('#/[^/]*(?:\?.*)?$#', '/', $guid) . ltrim(wp_basename($size_meta['file']), '/');
+        }
+
+        return '';
+    }
+
+    private static function get_url_pathname($url)
+    {
+        $path = wp_parse_url($url, PHP_URL_PATH);
+        return $path ? ltrim($path, '/') : '';
+    }
+
+    private static function is_lsky_attachment_metadata($image_meta)
+    {
+        return is_array($image_meta) && !empty($image_meta['key']);
+    }
+
+    private static function is_upload_path($path)
+    {
+        if (empty($path) || !is_string($path)) {
+            return false;
+        }
+
+        $upload_dir = wp_upload_dir();
+        $base_dir = wp_normalize_path($upload_dir['basedir']);
+        $target = wp_normalize_path(stripslashes($path));
+
+        return $base_dir && strpos($target, trailingslashit($base_dir)) === 0;
+    }
+
+    private static function repair_lsky_attachment_metadata($attachment_id)
+    {
+        $image_meta = wp_get_attachment_metadata($attachment_id);
+        if (!self::is_lsky_attachment_metadata($image_meta)) {
+            return [
+                'is_lsky' => false,
+                'changed' => false,
+                'sizes_changed' => 0,
+            ];
+        }
+
+        $changed = false;
+        $sizes_changed = 0;
+        $guid = get_post_field('guid', $attachment_id);
+        $sizes = isset($image_meta['sizes']) && is_array($image_meta['sizes']) ? $image_meta['sizes'] : [];
+        foreach ($sizes as $key => $size_meta) {
+            if (empty($size_meta['key']) || empty($size_meta['file'])) {
+                continue;
+            }
+
+            $remote_url = self::get_lsky_size_url($size_meta, $guid);
+            $size_changed = false;
+            if (!empty($remote_url) && (($size_meta['url'] ?? '') !== $remote_url)) {
+                $image_meta['sizes'][$key]['url'] = $remote_url;
+                $size_changed = true;
+            }
+
+            if (!empty($remote_url) && empty($size_meta['pathname'])) {
+                $pathname = self::get_url_pathname($remote_url);
+                if ($pathname !== '') {
+                    $image_meta['sizes'][$key]['pathname'] = $pathname;
+                    $size_changed = true;
+                }
+            }
+
+            if ($size_changed) {
+                $changed = true;
+                $sizes_changed++;
+            }
+        }
+
+        $attached_file = get_attached_file($attachment_id, true);
+        if (!empty($attached_file) && self::is_upload_path($attached_file)) {
+            $attached_file = wp_normalize_path($attached_file);
+            $current_ori_path = isset($image_meta['ori_path']) ? wp_normalize_path(stripslashes($image_meta['ori_path'])) : '';
+            $current_is_remote_filename = !empty($guid) && wp_basename($current_ori_path) === wp_basename($guid);
+            if ($current_ori_path !== $attached_file && (empty($current_ori_path) || !file_exists($current_ori_path) || $current_is_remote_filename)) {
+                $image_meta['ori_path'] = $attached_file;
+                $changed = true;
+            }
+        }
+
+        if ($changed) {
+            wp_update_attachment_metadata($attachment_id, $image_meta);
+        }
+
+        return [
+            'is_lsky' => true,
+            'changed' => $changed,
+            'sizes_changed' => $sizes_changed,
+        ];
+    }
+
+    private static function get_img_attribute($tag, $attribute)
+    {
+        $attribute = preg_quote($attribute, '#');
+        if (preg_match('#\s' . $attribute . '\s*=\s*([\'"])(.*?)\1#i', $tag, $matches)) {
+            return $matches[2];
+        }
+
+        if (preg_match('#\s' . $attribute . '\s*=\s*([^\s>]+)#i', $tag, $matches)) {
+            return $matches[1];
+        }
+
+        return '';
+    }
+
+    private static function get_img_attribute_int($tag, $attribute)
+    {
+        $value = self::get_img_attribute($tag, $attribute);
+        return $value !== '' ? absint($value) : 0;
+    }
+
+    private static function set_img_attribute($tag, $attribute, $value)
+    {
+        $quoted_attribute = preg_quote($attribute, '#');
+        $replacement = ' ' . $attribute . '="' . esc_attr($value) . '"';
+        if (preg_match('#\s' . $quoted_attribute . '\s*=\s*([\'"]).*?\1#i', $tag)) {
+            return preg_replace('#\s' . $quoted_attribute . '\s*=\s*([\'"]).*?\1#i', $replacement, $tag, 1);
+        }
+
+        if (preg_match('#\s' . $quoted_attribute . '\s*=\s*[^\s>]+#i', $tag)) {
+            return preg_replace('#\s' . $quoted_attribute . '\s*=\s*[^\s>]+#i', $replacement, $tag, 1);
+        }
+
+        $closing = preg_match('#\s*/>$#', $tag) ? ' />' : '>';
+        return preg_replace('#\s*/?>$#', $replacement . $closing, $tag, 1);
+    }
+
+    private static function remove_img_attribute($tag, $attribute)
+    {
+        $attribute = preg_quote($attribute, '#');
+        $tag = preg_replace('#\s' . $attribute . '\s*=\s*([\'"]).*?\1#i', '', $tag, 1);
+        return preg_replace('#\s' . $attribute . '\s*=\s*[^\s>]+#i', '', $tag, 1);
+    }
+
+    private static function get_content_image_size($tag)
+    {
+        if (preg_match('/\bsize-([a-z0-9_-]+)/i', $tag, $matches)) {
+            return sanitize_key($matches[1]);
+        }
+
+        return 'full';
+    }
+
+    private static function repair_legacy_content_images($content, &$stats)
+    {
+        return preg_replace_callback('/<img\b[^>]*\bwp-image-(\d+)[^>]*>/i', function ($matches) use (&$stats) {
+            $attachment_id = absint($matches[1]);
+            $image_meta = wp_get_attachment_metadata($attachment_id);
+            if (!self::is_lsky_attachment_metadata($image_meta)) {
+                return $matches[0];
+            }
+
+            $tag = $matches[0];
+            $updated_tag = $tag;
+            $size = self::get_content_image_size($tag);
+            $image_src = wp_get_attachment_image_src($attachment_id, $size);
+            $src = is_array($image_src) ? $image_src[0] : wp_get_attachment_url($attachment_id);
+            $width = is_array($image_src) ? absint($image_src[1]) : self::get_img_attribute_int($tag, 'width');
+            $height = is_array($image_src) ? absint($image_src[2]) : self::get_img_attribute_int($tag, 'height');
+            if (!$width && !empty($image_meta['width'])) {
+                $width = absint($image_meta['width']);
+            }
+            if (!$height && !empty($image_meta['height'])) {
+                $height = absint($image_meta['height']);
+            }
+
+            $current_src = self::get_img_attribute($tag, 'src');
+            if (!empty($src) && false !== strpos($current_src, 'wp-content/uploads')) {
+                $updated_tag = self::set_img_attribute($updated_tag, 'src', $src);
+                $stats['content_srcs_repaired']++;
+            }
+
+            $current_srcset = self::get_img_attribute($tag, 'srcset');
+            if (false !== strpos($current_srcset, 'wp-content/uploads')) {
+                $new_srcset = ($width && $height && !empty($src)) ? wp_calculate_image_srcset([$width, $height], $src, $image_meta, $attachment_id) : false;
+                if (!empty($new_srcset)) {
+                    $updated_tag = self::set_img_attribute($updated_tag, 'srcset', $new_srcset);
+                } else {
+                    $updated_tag = self::remove_img_attribute($updated_tag, 'srcset');
+                }
+                $stats['content_srcsets_repaired']++;
+            }
+
+            return $updated_tag;
+        }, $content);
+    }
+
+    private static function repair_legacy_post_content(&$stats)
+    {
+        $post_types = array_values(get_post_types(['public' => true], 'names'));
+        $post_types = array_values(array_unique(array_merge($post_types, ['wp_block', 'wp_template', 'wp_template_part', 'wp_navigation'])));
+        $paged = 1;
+
+        do {
+            $query = new \WP_Query([
+                'post_type' => $post_types,
+                'post_status' => 'any',
+                'posts_per_page' => 100,
+                'paged' => $paged,
+                'fields' => 'ids',
+                'orderby' => 'ID',
+                'order' => 'ASC',
+            ]);
+
+            foreach ($query->posts as $post_id) {
+                $content = get_post_field('post_content', $post_id);
+                if (false === strpos($content, 'wp-image-') || false === strpos($content, 'wp-content/uploads')) {
+                    continue;
+                }
+
+                $stats['content_posts_scanned']++;
+                $before_srcsets = $stats['content_srcsets_repaired'];
+                $before_srcs = $stats['content_srcs_repaired'];
+                $new_content = self::repair_legacy_content_images($content, $stats);
+                if ($new_content !== $content) {
+                    wp_update_post([
+                        'ID' => $post_id,
+                        'post_content' => $new_content,
+                    ]);
+                    $stats['content_posts_repaired']++;
+                } else {
+                    $stats['content_srcsets_repaired'] = $before_srcsets;
+                    $stats['content_srcs_repaired'] = $before_srcs;
+                }
+            }
+
+            $paged++;
+        } while ($paged <= (int) $query->max_num_pages);
+    }
+
+    public static function repair_legacy_srcset_data()
+    {
+        $stats = [
+            'attachments_scanned' => 0,
+            'lsky_attachments' => 0,
+            'attachment_metadata_repaired' => 0,
+            'sizes_repaired' => 0,
+            'content_posts_scanned' => 0,
+            'content_posts_repaired' => 0,
+            'content_srcsets_repaired' => 0,
+            'content_srcs_repaired' => 0,
+        ];
+
+        $paged = 1;
+        do {
+            $query = new \WP_Query([
+                'post_type' => 'attachment',
+                'post_mime_type' => 'image',
+                'post_status' => 'inherit',
+                'posts_per_page' => 100,
+                'paged' => $paged,
+                'fields' => 'ids',
+                'orderby' => 'ID',
+                'order' => 'ASC',
+            ]);
+
+            foreach ($query->posts as $attachment_id) {
+                $stats['attachments_scanned']++;
+                $result = self::repair_lsky_attachment_metadata((int) $attachment_id);
+                if (empty($result['is_lsky'])) {
+                    continue;
+                }
+
+                $stats['lsky_attachments']++;
+                if (!empty($result['changed'])) {
+                    $stats['attachment_metadata_repaired']++;
+                }
+                $stats['sizes_repaired'] += (int) $result['sizes_changed'];
+            }
+
+            $paged++;
+        } while ($paged <= (int) $query->max_num_pages);
+
+        self::repair_legacy_post_content($stats);
+
+        return $stats;
+    }
+
+    public static function calculate_image_srcset($sources, $size_array, $image_src, $image_meta, $attachment_id)
+    {
+        if (!is_array($sources)) {
+            return $sources;
+        }
+
+        $lsky_urls = self::build_lsky_srcset_urls($image_meta, $attachment_id);
+        if (empty($lsky_urls)) {
+            return $sources;
+        }
+
+        foreach ($sources as $width => $source) {
+            if (empty($source['url'])) {
+                continue;
+            }
+
+            $filename = wp_basename($source['url']);
+            if (isset($lsky_urls[$filename])) {
+                $sources[$width]['url'] = $lsky_urls[$filename];
+            } else {
+                unset($sources[$width]);
+            }
+        }
+
+        return $sources;
     }
 
     public static function img_datahandle($imgname){
@@ -215,15 +568,18 @@ class LskyCommon extends LskyPro
                     $image_meta['sizes'][$key]['filesize'] = $urldata['size'];
                 }
                 $image_meta['sizes'][$key]['file'] = $urldata['name'];
+                $image_meta['sizes'][$key]['url'] = $urldata['url'];
                 $image_meta['sizes'][$key]['mime-type'] = $urldata['type'];
                 $image_meta['sizes'][$key]['key'] = $urldata['key'];
+                $image_meta['sizes'][$key]['pathname'] = $urldata['pathname'];
                 $image_meta['sizes'][$key]['ori_name'] = $filename;
                 $image_meta['sizes'][$key]['ori_path'] = addslashes($upload_dir['path']).'/'.$filename;
             }
+            $original_file = $image_meta['file'];
             $image_meta['file'] = $post->post_title;
             $image_meta['ori_file'] = $post->post_name;
             $image_meta['key'] = $post->post_content;
-            $image_meta['ori_path'] = addslashes($upload_dir['basedir'].'/'.$image_meta['file']);
+            $image_meta['ori_path'] = addslashes($upload_dir['basedir'].'/'.$original_file);
             wp_update_post(array(
                 'ID' => $attachment_id,
                 'post_content' => '',

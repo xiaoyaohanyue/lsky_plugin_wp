@@ -1,10 +1,10 @@
 {
-  "version": "2.0.5",
+  "version": "2.0.6",
   "requires": "6.0",
   "tested": "7.0",
   "requires_php": "7.4",
   "homepage": "https://github.com/xiaoyaohanyue/lsky_plugin_wp",
-  "download_url": "https://github.com/xiaoyaohanyue/lsky_plugin_wp/releases/download/v2.0.5/lsky_plugin_wp-github.zip",
+  "download_url": "https://github.com/xiaoyaohanyue/lsky_plugin_wp/releases/download/v2.0.6/lsky_plugin_wp-github.zip",
   "description": "将 WordPress 媒体上传到 LskyPro（兰空图床）。",
-  "changelog": "<ul><li>优化设置页与安全校验。</li></ul>"
+  "changelog": "<ul><li>修复区块编辑器内容的响应式图片 srcset 地址。</li><li>新增一键修复历史图片数据工具。</li><li>补齐 Lsky 缩略图远程地址与路径元数据。</li></ul>"
 }
